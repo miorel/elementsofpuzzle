@@ -58,7 +58,7 @@ use CGI;
 use HTML::Parser;
 
 our @ISA       = ();
-our $VERSION   = '1.00';
+our $VERSION   = '1.01';
 
 my($ua, $service, $retries);
 
@@ -475,7 +475,7 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-Version 1.00  (June 22, 2009)
+Version 1.01  (June 22, 2009)
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also

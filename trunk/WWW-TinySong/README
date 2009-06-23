@@ -1,4 +1,4 @@
-WWW::TinySong version 1.00
+WWW::TinySong version 1.01
 ==========================
 
 tinysong.com is a web app that can be queried for a song and returns a tiny
@@ -37,7 +37,6 @@ This module requires the following other modules:
 
   Carp
   CGI
-  Exporter
   HTML::Parser
   LWP::UserAgent
 

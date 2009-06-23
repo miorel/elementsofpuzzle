@@ -1,0 +1,11 @@
+Changes                                  Module change log
+MANIFEST                                 This file
+Makefile.PL                              Generate Makefile
+README                                   Read this file
+lib/WWW/SPOJ.pm                          Code/POD for WWW::SPOJ
+lib/WWW/SPOJ/User.pm                     Code/POD for WWW::SPOJ::User
+t/WWW-SPOJ.t                             Test WWW::SPOJ
+t/WWW-SPOJ-User.t                        Test WWW::SPOJ::User
+t/pod-coverage.t                         Test POD coverage
+t/pod.t                                  Test POD
+META.yml                                 Module meta-data (added by MakeMaker)
