@@ -42,11 +42,6 @@ URL, allowing you to listen to the song for free online and share it with
 friends.  L<WWW::TinySong> is a Perl interface to this service, allowing you
 to programmatically search its underlying database.
 
-=head1 NOTICE
-
-This version integrates the official API and breaks backward compatibility
-with pre-API module versions that worked exclusively by scraping.
-
 =cut
 
 use 5.006;
@@ -475,7 +470,7 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-Version 1.01  (June 22, 2009)
+Version 1.01  (June 23, 2009)
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also

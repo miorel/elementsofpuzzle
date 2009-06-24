@@ -1,0 +1,10 @@
+Changes                                  Change log
+MANIFEST                                 This file
+META.yml                                 Module meta-data
+Makefile.PL                              Generate Makefile
+README                                   Useful information
+examples/example.pl                      Example of something interesting
+lib/Some/Module.pm                       Source for Some::Module
+t/Some-Module.t                          Test Some::Module
+t/pod-coverage.t                         Test POD coverage
+t/pod.t                                  Test POD
