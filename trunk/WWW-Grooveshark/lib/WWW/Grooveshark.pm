@@ -1,12 +1,12 @@
-package Some::Module;
+package WWW::Grooveshark;
 
 =head1 NAME
 
-Some::Module - Do something interesting
+WWW::Grooveshark - Do something interesting
 
 =head1 SYNOPSIS
 
-  use Some::Module;
+  use WWW::Grooveshark;
   
   # something interesting happens
 
@@ -21,11 +21,12 @@ use strict;
 use warnings;
 
 use Carp;
-use Exporter;
 
 our @EXPORT_OK = ();
 our @ISA       = qw(Exporter);
-our $VERSION   = '0.01';
+our $VERSION   = '0.00_01';
+
+my($ua, $service, $retries);
 
 =head1 FUNCTIONS
 
@@ -64,11 +65,8 @@ L<http://www.google.com/>, L<Some::Other::Module>
 
 =head1 BUGS
 
-Please report them!  The preferred way to submit a bug report for this module
-is through CPAN's bug tracker:
-L<http://rt.cpan.org/Public/Dist/Display.html?Name=Some-Module>.  You may
-also create an issue at L<http://elementsofpuzzle.googlecode.com/> or drop
-me an e-mail.
+Please report them!  Create an issue at
+L<http://elementsofpuzzle.googlecode.com/> or drop me an e-mail.
 
 =head1 AUTHOR
 
@@ -76,11 +74,10 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-Version 0.01  (June 23, 2009)
+Version 0.00_01  (June 26, 2009)
 
 The latest version is hosted on Google Code as part of
-L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
-contributed to CPAN: L<http://search.cpan.org/dist/Some-Module/>.
+L<http://elementsofpuzzle.googlecode.com/>.
 
 =head1 COPYRIGHT AND LICENSE
 
