@@ -2,12 +2,12 @@ package WWW::Grooveshark;
 
 =head1 NAME
 
-WWW::Grooveshark - Do something interesting
+WWW::Grooveshark - Perl wrapper for the Grooveshark API
 
 =head1 SYNOPSIS
 
   use WWW::Grooveshark;
-  
+
   # something interesting happens
 
 =head1 DESCRIPTION
@@ -21,38 +21,135 @@ use strict;
 use warnings;
 
 use Carp;
+use JSON::Any;
 
-our @EXPORT_OK = ();
-our @ISA       = qw(Exporter);
-our $VERSION   = '0.00_01';
+use WWW::Grooveshark::Response;
 
-my($ua, $service, $retries);
+our @ISA     = ();
+our $VERSION = '0.00_01';
 
-=head1 FUNCTIONS
+$VERSION = eval $VERSION;
 
-Generic text about all the nifty things this module can do.
+=head1 CONSTRUCTOR
+
+Description of reason for constructor
 
 =over 4
 
-=item Some::Module->do_something_awesome( @ARG )
+=item WWW::Grooveshark->new( %OPTIONS )
+
+Prepares a new L<WWW::Grooveshark> object with the specified options, which are
+passed in as key-value pairs, as in a hash.  Accepted options are:
+
+=over 4
+
+=item I<agent>
+
+Value to use for the C<User-Agent> HTTP header.  Defaults to
+"WWW::Grooveshark/### libwww-perl/###", where the "###" are substituted with
+the appropriate versions.  This is provided for convenience: the user-agent
+string can also be set in the C<useragent_args> (see below).  If it's set in
+both places, this one takes precedence.
+
+=item I<useragent_class>
+
+Name of the L<LWP::UserAgent> compatible class to be used internally by the 
+newly-created object.  Defaults to L<LWP::UserAgent>.
+
+=item I<useragent_args>
+
+Hashref of arguments to pass to constructor of the aforementioned
+C<useragent_class>.  Defaults to no arguments.
+
+=back
+
+Options not listed above are ignored.
 
 =cut
 
-sub do_something_awesome {
-    my($pkg, @arg) = @_;
-	# do something awesome
-	return 0;
+sub new {
+	my($pkg, %opts) = @_;
+
+	# user-agent constructor args
+	my $ua_args = $opts{useragent_class} || {};
+	
+	# user-agent string
+	$ua_args->{agent} = $opts{agent} if defined $opts{agent};
+	$ua_args->{agent} ||= __PACKAGE__  . "/$VERSION ";
+
+	# prepare user-agent object
+	my $ua_class = $opts{useragent_class} || 'LWP::UserAgent';
+	eval "require $ua_class";
+	croak $@ if $@;
+	my $ua = $ua_class->new(%$ua_args);
+
+	return bless({
+		_ua          => $ua,
+		_service     => $opts{service}     || 'api.grooveshark.com',
+		_path        => $opts{path}        || 'ws',
+		_api_version => $opts{api_version} || '1.0',
+		_https       => $opts{https}       || '0',
+		_session_id  => '',
+		_json        => new JSON::Any,
+	}, $pkg);
 }
+
+=back
+
+=head1 API METHODS
+
+=over 4
+
+=item $gs->session_start()
+
+=cut
+
+sub session_start {
+	my($self, %args) = @_;
+	my $ret = $self->_call('session.start', %args);
+	use Data::Dumper;
+	print STDERR Dumper($ret);
+	return $ret;
+}
+
 =back
 
 =cut
 
+sub session_id {
+	return shift->{_session_id};
+}
+
 ################################################################################
 
-sub _do_something_awesome_internally {
-    my($pkg, @arg) = @_;
-	# do something awesome
-	return 0;
+sub _call {
+	my($self, $method, %param) = @_;
+	my $json = $self->{_json}->encode({
+		header     => {sessionID => ''},
+		method     => $method,
+		parameters => \%param,
+	});
+	my $url = sprintf("%s://%s/%s/%s", ($self->{_https} ? 'https' : 'http'),
+		map($self->{$_}, qw(_service _path _api_version)));
+	print STDERR "JSON: $json\n";
+	my $response = $self->{_ua}->post($url,
+		'Content-Type' => 'text/json',
+		'Content'      => $json,
+	);
+
+   	my $ret;
+	if($response->is_success) {
+		my $content = $response->decoded_content || $response->content;
+		$ret = $self->{_json}->decode($content);
+	}
+	else {
+    	$ret = {
+    		header => {sessionID => $self->session_id},
+    		fault  => {code => 512, message => $response->status_line},
+    	};
+	}
+
+	return WWW::Grooveshark::Response->new($ret);
 }
 
 1;
@@ -61,7 +158,7 @@ __END__
 
 =head1 SEE ALSO
 
-L<http://www.google.com/>, L<Some::Other::Module>
+L<http://grooveshark.com/>, L<WWW::Grooveshark::Response>, L<WWW::TinySong>
 
 =head1 BUGS
 
@@ -74,7 +171,7 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-Version 0.00_01  (June 26, 2009)
+Version 0.00_01  (July 1, 2009)
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.

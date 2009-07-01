@@ -30,7 +30,8 @@ DEPENDENCIES
 This module requires the following other modules:
 
   Carp
-  Exporter
+  JSON::Any
+  LWP::UserAgent
 
 CONTACT
 

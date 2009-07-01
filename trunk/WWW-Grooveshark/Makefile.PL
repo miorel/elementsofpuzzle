@@ -13,7 +13,8 @@ WriteMakefile(
 	MIN_PERL_VERSION => '5.006',
 	PREREQ_PM        =>
 		{
-			Carp     => 0,
-			Exporter => 0,
+			Carp           => 0,
+			JSON::Any      => 0,
+			LWP::UserAgent => 0,
 		},
 );

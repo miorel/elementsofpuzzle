@@ -1,6 +1,10 @@
 Revision history for WWW::Grooveshark
 =====================================
 
+July 1, 2009
+------------
+ * created WWW::Grooveshark::Response to encapsulate API responses
+
 June 26, 2009
 -------------
  * original version created
