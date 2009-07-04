@@ -14,7 +14,9 @@ WriteMakefile(
 	PREREQ_PM        =>
 		{
 			Carp           => 0,
+			Exporter       => 0,
 			JSON::Any      => 0,
 			LWP::UserAgent => 0,
+			NEXT           => 0.61,
 		},
 );

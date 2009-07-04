@@ -16,7 +16,7 @@ Response objects are returned by the API methods of L<WWW::Grooveshark>:
       print STDERR $response->fault_line;
   }
   else {
-      for($response->result('songs')) {
+      for($response->songs) {
           # do something interesting
       }
   }
@@ -24,9 +24,9 @@ Response objects are returned by the API methods of L<WWW::Grooveshark>:
 =head1 DESCRIPTION
 
 C<WWW::Grooveshark::Response> encapsulates a response message from the
-Grooveshark API.  A response consists of a header (sessionID, hostname, etc.)
-and either a result (in the case of "success" responses) or a fault code and
-message (in case of errors).
+Grooveshark API.  A response consists of a header (sessionID, hostname,
+etc.) and either a result (in the case of "success" responses) or a fault code
+and message (in case of errors).
 
 Internally, this class is just a C<bless>ed decoding of the JSON response, so
 if you're too lazy or stubborn to familiarize yourself with this interface,
@@ -40,7 +40,7 @@ use warnings;
 
 use Carp;
 use Exporter;
-use NEXT 0.61; # earlier versions have the NEXT::AUTOLOAD bug
+use NEXT 0.61; # earlier versions seem to have a NEXT::AUTOLOAD bug
 
 =head1 EXPORTS
 
@@ -109,7 +109,16 @@ sub new {
 
 =back
 
-=head1 AUTOLOADED METHODS
+=head1 METHOD AUTOLOADING
+
+More often than not, you will probably be accessing the result element of a
+response object.  Because C<$response-E<gt>result('key')> is only marginally
+better than C<$response-E<gt>{result}-E<gt>{key}>, this class uses
+C<AUTOLOAD>ing to support the terser C<$response-E<gt>key> syntax, as with the
+C<songs> "method" in the L</SYNOPSIS>.  This will only work with success
+responses, so ask each object if it C<is_fault>.  If the result does not
+contain the given key, the usual unknown method handling mechanism will take
+over.
 
 =cut
 
@@ -139,11 +148,13 @@ sub AUTOLOAD {
 # provided to appease AUTOLOAD
 sub DESTROY {}
 
-=head1 STANDARD METHODS
+=head1 METHODS
+
+The following methods exist for all class instances:
 
 =over 4
 
-=item $obj->header( $KEY )
+=item $response->header( $KEY )
 
 Returns the header element corresponding to $KEY.
 
@@ -153,10 +164,10 @@ sub header {
 	return shift->{header}->{shift()};
 }
 
-=item $obj->sessionID( )
+=item $response->sessionID( )
 
 Returns the ID of the session that created this response object.  This is a
-shortcut for passing "sessionID" to the C<header> method.
+shortcut for C<$response-E<gt>header('sessionID')>.
 
 =cut
 
@@ -164,7 +175,7 @@ sub sessionID {
 	return shift->header('sessionID');
 }
 
-=item $obj->is_fault( )
+=item $response->is_fault( )
 
 Checks whether this response object represents a fault.
 
@@ -174,7 +185,7 @@ sub is_fault {
 	return exists(shift->{fault});
 }
 
-=item $obj->result( [ $KEY ] )
+=item $response->result( [ $KEY ] )
 
 Returns the result element corresponding to $KEY, or the whole result part of
 the response if no $KEY is specified.  This will probably only give a
@@ -202,7 +213,7 @@ sub result {
 	return $ret;
 }
 
-=item $obj->fault( $KEY )
+=item $response->fault( $KEY )
 
 Returns the fault element corresponding to $KEY.  This will only give a
 meaningful result if C<is_fault> is true.
@@ -213,14 +224,13 @@ sub fault {
 	return shift->{fault}->{shift()};
 }
 
-=item $obj->fault_code( )
+=item $response->fault_code( )
 
 Returns the integer code of the fault represented by this response object.
-This is a shortcut for passing "code" to the C<fault> method.  Check
-Grooveshark's API for the most up-to-date information about fault codes.  The
-standard set at the time of this writing is listed below, along with the
-corresponding names for the constants that may be exported by this module (in
-parentheses).
+This is a shortcut for C<$response-E<gt>fault('code')>.  Check Grooveshark's
+API for the most up-to-date information about fault codes.  The standard set
+at the time of this writing is listed below, along with the corresponding
+names for the constants that may be exported by this module (in parentheses).
 
 =over 4
 
@@ -288,11 +298,10 @@ sub fault_code {
 	return shift->fault('code');
 }
 
-=item $obj->fault_message( )
+=item $response->fault_message( )
 
 Returns the contextually customized message of the fault represented by this
-response object.  This is a shortcut for passing "message" to the C<fault>
-method.
+response object.  This is a shortcut for C<$response-E<gt>fault('message')>.
 
 =cut
 
@@ -300,11 +309,10 @@ sub fault_message {
 	return shift->fault('message');
 }
 
-=item $obj->fault_details( )
+=item $response->fault_details( )
 
 Returns the (possibly undefined) details of the fault represented by this
-response object.  This is a shortcut for passing "details" to the C<fault>
-method.
+response object.  This is a shortcut for C<$response-E<gt>fault('details')>.
 
 =cut
 
@@ -312,7 +320,7 @@ sub fault_details {
 	return shift->fault('details');
 }
 
-=item $obj->fault_line( )
+=item $response->fault_line( )
 
 Returns an HTTP style status line, containing the fault code and message.
 
@@ -349,7 +357,7 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 =head1 VERSION
 
 This document describes C<WWW::Grooveshark::Response> version 0.00_01
-(July 3, 2009).
+(July 4, 2009).
 
 This module is distributed with L<WWW::Grooveshark> and therefore takes its
 version from that module.  The latest version of both components is hosted on

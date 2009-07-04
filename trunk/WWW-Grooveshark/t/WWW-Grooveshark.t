@@ -1,4 +1,4 @@
-use Test::More tests => 28;
+use Test::More tests => 32;
 
 my $config_file;
 BEGIN {
@@ -6,7 +6,7 @@ BEGIN {
 	diag(<<"NOTE");
 
 
-NOTE: This test takes additional configuration.
+NOTE: This test takes additional configuration to run all tests.
 See $config_file.example for details.
 
 
@@ -15,7 +15,7 @@ NOTE
 };
 
 my $gs;
-ok($gs = WWW::Grooveshark->new(), 'new() returns true value');
+ok($gs = WWW::Grooveshark->new, 'new() returns true value');
 
 SKIP: {
 	# configurable values
@@ -28,21 +28,22 @@ SKIP: {
 
     my $conn_ok;
     eval 'use Net::Config qw(%NetConfig); $conn_ok = $NetConfig{test_hosts}';
-    skip 'Net::Config needed for network-related tests', 26 if $@;
-    skip 'No network connection', 26 unless $conn_ok;
+    skip 'Net::Config needed for network-related tests', 30 if $@;
+    skip 'No network connection', 30 unless $conn_ok;
 
 	my $r;
 
 	# test sessionless service_ping()
 	ok($gs->service_ping, 'sessionless service_ping() returns true value');
 
-	diag_skip('API key not defined', 25) unless defined $api_key;
+	diag_skip('API key not defined, skipping remaining tests', 29)
+		unless defined $api_key;
 
 	# test session_start()
 	ok($r = $gs->session_start(apiKey => $api_key),
 		'session_start() returns true value');
 
-	diag_skip('Problem starting session: ' . $r->fault_line, 24)
+	diag_skip('Problem starting session: ' . $r->fault_line, 28)
 		if $r->is_fault;
 
 	# test service_ping()
@@ -60,8 +61,12 @@ SKIP: {
 	my($album_id, $artist_id, $playlist_id, $song_id);
 
 	# test search_albums()
-	$r = $gs->search_albums(%search);
-	ok($r->albums, 'search_albums() returns expected structure');
+	ok($gs->search_albums(%search)->albums,
+		'search_albums() returns expected structure');
+
+	# test popular_getAlbums()
+	$r = $gs->popular_getAlbums(limit => 1);
+	ok($r->albums, 'popular_getAlbums() returns expected structure');
 	$album_id = ($r->albums)[0]->{albumID};
 
 	# test album_about()
@@ -76,8 +81,12 @@ SKIP: {
 		'album_getSongs() returns expected value');
 
 	# test search_artists()
-	$r = $gs->search_artists(%search);
-	ok($r->artists, 'search_artists() returns expected structure');
+	ok($gs->search_artists(%search)->artists,
+		'search_artists() returns expected structure');
+
+	# test popular_getArtists()
+	$r = $gs->popular_getArtists(limit => 1);
+	ok($r->artists, 'popular_getArtists() returns expected structure');
 	$artist_id = ($r->artists)[0]->{artistID};
 
 	# test artist_about()
@@ -113,14 +122,21 @@ SKIP: {
 		'playlist_about() returns expected value');
 
 	# test search_songs()
-	$r = $gs->search_songs(%search);
-	ok($r->songs, 'search_songs() returns expected structure');
+	ok($gs->search_songs(%search)->songs,
+		'search_songs() returns expected structure');
+
+	# test popular_getSongs()
+	$r = $gs->popular_getSongs(limit => 1);
+	ok($r->songs, 'popular_getSongs() returns expected structure');
 	$song_id = ($r->songs)[0]->{songID};
 
 	# test song_about()
 	ok($r = $gs->song_about(songID => $song_id),
 		'song_about() returns true value');
 	is($r->song->{songID}, $song_id, 'song_about() returns expected value');
+	
+	# test session_destroy()
+	ok(!$gs->session_destroy->is_fault, 'session_destroy() succeeds');
 }
 
 sub diag_skip {

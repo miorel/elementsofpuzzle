@@ -1,6 +1,10 @@
 Revision history for WWW::Grooveshark
 =====================================
 
+July 4, 2009
+------------
+ * added the popular API methods to WWW::Grooveshark
+
 July 3, 2009
 ------------
  * added AUTOLOADing to WWW::Grooveshark::Response and improved documentation

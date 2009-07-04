@@ -108,7 +108,7 @@ sub new {
 
 =over 4
 
-=item $obj->sessionID( )
+=item $gs->sessionID( )
 
 =back
 
@@ -120,9 +120,231 @@ sub sessionID {
 
 =head1 API METHODS
 
+=head2 ALBUM
+
 =over 4
 
-=item $obj->session_start( )
+=item $gs->album_about( )
+
+=cut
+
+sub album_about {
+	my($self, %args) = @_;
+	my $ret = $self->_call('album.about', %args);
+	return $ret;
+}
+
+=item $gs->album_getSongs( )
+
+=cut
+
+sub album_getSongs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('album.getSongs', %args);
+	return $ret;
+}
+
+=back
+
+=head2 ARTIST
+
+=over 4
+
+=item $gs->artist_about( )
+
+=cut
+
+sub artist_about {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.about', %args);
+	return $ret;
+}
+
+=item $gs->artist_getAlbums( )
+
+=cut
+
+sub artist_getAlbums {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.getAlbums', %args);
+	return $ret;
+}
+
+=item $gs->artist_getSimilar( )
+
+=cut
+
+sub artist_getSimilar {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.getSimilar', %args);
+	return $ret;
+}
+
+=item $gs->artist_getSongs( )
+
+=cut
+
+sub artist_getSongs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.getSongs', %args);
+	return $ret;
+}
+
+=back
+
+=head2 AUTOPLAY
+
+=over 4
+
+=back
+
+=head2 PLAYLIST
+
+=over 4
+
+=item $gs->playlist_about( )
+
+=cut
+
+sub playlist_about {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.about', %args);
+	return $ret;
+}
+
+=back
+
+=head2 POPULAR
+
+=over 4
+
+=item $gs->popular_getAlbums( )
+
+=cut
+
+sub popular_getAlbums {
+	my($self, %args) = @_;
+	my $ret = $self->_call('popular.getAlbums', %args);
+	return $ret;
+}
+
+=item $gs->popular_getArtists( )
+
+=cut
+
+sub popular_getArtists {
+	my($self, %args) = @_;
+	my $ret = $self->_call('popular.getArtists', %args);
+	return $ret;
+}
+
+=item $gs->popular_getSongs( )
+
+=cut
+
+sub popular_getSongs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('popular.getSongs', %args);
+	return $ret;
+}
+
+=back
+
+=head2 SEARCH
+
+=over 4
+
+=item $gs->search_albums( )
+
+=cut
+
+sub search_albums {
+	my($self, %args) = @_;
+	my $ret = $self->_call('search.albums', %args);
+	return $ret;
+}
+
+=item $gs->search_artists( )
+
+=cut
+
+sub search_artists {
+	my($self, %args) = @_;
+	my $ret = $self->_call('search.artists', %args);
+	return $ret;
+}
+
+=item $gs->search_playlists( )
+
+=cut
+
+sub search_playlists {
+	my($self, %args) = @_;
+	my $ret = $self->_call('search.playlists', %args);
+	return $ret;
+}
+
+=item $gs->search_songs( )
+
+=cut
+
+sub search_songs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('search.songs', %args);
+	return $ret;
+}
+
+=back
+
+=head2 SERVICE
+
+=over 4
+
+=item $gs->service_ping( )
+
+=cut
+
+sub service_ping {
+	my($self, %args) = @_;
+	my $ret = $self->_call('service.ping', %args);
+	return $ret;
+}
+
+=back
+
+=head2 SESSION
+
+=over 4
+
+=item $gs->session_destroy( )
+
+=cut
+
+sub session_destroy {
+	my($self, %args) = @_;	
+	my $ret = $self->_call('session.destroy', %args);
+	
+	# kill the stored session ID if destroying was successful
+	$self->{_session_id} = undef unless $ret->is_fault;
+		
+	return $ret;
+}
+
+=item $gs->session_get( )
+
+=cut
+
+sub session_get {
+	my($self, %args) = @_;
+	my $ret = $self->_call('session.get', %args);
+	
+	# save the session ID given in the response
+	$self->{_session_id} = $ret->sessionID unless $ret->is_fault;
+	
+	return $ret;
+}
+
+=item $gs->session_start( )
 
 =cut
 
@@ -147,92 +369,13 @@ sub session_start {
 	return $ret;
 }
 
-=item $obj->session_get( )
+=back
 
-=cut
+=head2 SONG
 
-sub session_get {
-	my($self, %args) = @_;
-	my $ret = $self->_call('session.get', %args);
-	
-	# save the session ID given in the response
-	$self->{_session_id} = $ret->sessionID unless $ret->is_fault;
-	
-	return $ret;
-}
+=over 4
 
-=item $obj->service_ping( )
-
-=cut
-
-sub service_ping {
-	my($self, %args) = @_;
-	my $ret = $self->_call('service.ping', %args);
-	return $ret;
-}
-
-=item $obj->search_songs( )
-
-=cut
-
-sub search_songs {
-	my($self, %args) = @_;
-	my $ret = $self->_call('search.songs', %args);
-	return $ret;
-}
-
-=item $obj->search_artists( )
-
-=cut
-
-sub search_artists {
-	my($self, %args) = @_;
-	my $ret = $self->_call('search.artists', %args);
-	return $ret;
-}
-
-=item $obj->search_albums( )
-
-=cut
-
-sub search_albums {
-	my($self, %args) = @_;
-	my $ret = $self->_call('search.albums', %args);
-	return $ret;
-}
-
-=item $obj->search_playlists( )
-
-=cut
-
-sub search_playlists {
-	my($self, %args) = @_;
-	my $ret = $self->_call('search.playlists', %args);
-	return $ret;
-}
-
-=item $obj->artist_about( )
-
-=cut
-
-sub artist_about {
-	my($self, %args) = @_;
-	my $ret = $self->_call('artist.about', %args);
-	return $ret;
-}
-
-=item $obj->album_about( )
-
-=cut
-
-sub album_about {
-	my($self, %args) = @_;
-	my $ret = $self->_call('album.about', %args);
-	return $ret;
-}
-
-
-=item $obj->song_about( )
+=item $gs->song_about( )
 
 =cut
 
@@ -242,56 +385,11 @@ sub song_about {
 	return $ret;
 }
 
+=back
 
-=item $obj->playlist_about( )
+=head2 USER
 
-=cut
-
-sub playlist_about {
-	my($self, %args) = @_;
-	my $ret = $self->_call('playlist.about', %args);
-	return $ret;
-}
-
-=item $obj->album_getSongs( )
-
-=cut
-
-sub album_getSongs {
-	my($self, %args) = @_;
-	my $ret = $self->_call('album.getSongs', %args);
-	return $ret;
-}
-
-=item $obj->artist_getAlbums( )
-
-=cut
-
-sub artist_getAlbums {
-	my($self, %args) = @_;
-	my $ret = $self->_call('artist.getAlbums', %args);
-	return $ret;
-}
-
-=item $obj->artist_getSimilar( )
-
-=cut
-
-sub artist_getSimilar {
-	my($self, %args) = @_;
-	my $ret = $self->_call('artist.getSimilar', %args);
-	return $ret;
-}
-
-=item $obj->artist_getSongs( )
-
-=cut
-
-sub artist_getSongs {
-	my($self, %args) = @_;
-	my $ret = $self->_call('artist.getSongs', %args);
-	return $ret;
-}
+=over 4
 
 =back
 
@@ -357,7 +455,7 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-This document describes C<WWW::Grooveshark> version 0.00_01 (July 3, 2009).
+This document describes C<WWW::Grooveshark> version 0.00_01 (July 4, 2009).
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.
