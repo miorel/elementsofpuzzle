@@ -23,11 +23,11 @@ use warnings;
 use Carp;
 use JSON::Any;
 
-use WWW::Grooveshark::Response;
+use WWW::Grooveshark::Response qw(:fault);
 
-our @ISA     = ();
+our @ISA = ();
+
 our $VERSION = '0.00_01';
-
 $VERSION = eval $VERSION;
 
 =head1 CONSTRUCTOR
@@ -42,6 +42,14 @@ Prepares a new L<WWW::Grooveshark> object with the specified options, which are
 passed in as key-value pairs, as in a hash.  Accepted options are:
 
 =over 4
+
+=item I<service>
+
+=item I<path>
+
+=item I<api_version>
+
+=item I<https>
 
 =item I<agent>
 
@@ -89,26 +97,199 @@ sub new {
 		_path        => $opts{path}        || 'ws',
 		_api_version => $opts{api_version} || '1.0',
 		_https       => $opts{https}       || '0',
-		_session_id  => '',
+		_session_id  => undef,
 		_json        => new JSON::Any,
 	}, $pkg);
 }
 
 =back
 
+=head1 MANAGEMENT METHODS
+
+=over 4
+
+=item $obj->sessionID( )
+
+=back
+
+=cut
+
+sub sessionID {
+	return shift->{_session_id};
+}
+
 =head1 API METHODS
 
 =over 4
 
-=item $gs->session_start()
+=item $obj->session_start( )
 
 =cut
 
 sub session_start {
 	my($self, %args) = @_;
+	
+	# remove a prior session ID, but store this value
+	my $old_session_id = $self->{_session_id};
+	$self->{_session_id} = undef;
+	
 	my $ret = $self->_call('session.start', %args);
-	use Data::Dumper;
-	print STDERR Dumper($ret);
+	
+	if($ret->is_fault) {
+		# restore old session ID
+		$self->{_session_id} = $old_session_id;
+	}
+	else {
+		# save the session ID given in the response
+		$self->{_session_id} = $ret->sessionID;
+	}
+	
+	return $ret;
+}
+
+=item $obj->session_get( )
+
+=cut
+
+sub session_get {
+	my($self, %args) = @_;
+	my $ret = $self->_call('session.get', %args);
+	
+	# save the session ID given in the response
+	$self->{_session_id} = $ret->sessionID unless $ret->is_fault;
+	
+	return $ret;
+}
+
+=item $obj->service_ping( )
+
+=cut
+
+sub service_ping {
+	my($self, %args) = @_;
+	my $ret = $self->_call('service.ping', %args);
+	return $ret;
+}
+
+=item $obj->search_songs( )
+
+=cut
+
+sub search_songs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('search.songs', %args);
+	return $ret;
+}
+
+=item $obj->search_artists( )
+
+=cut
+
+sub search_artists {
+	my($self, %args) = @_;
+	my $ret = $self->_call('search.artists', %args);
+	return $ret;
+}
+
+=item $obj->search_albums( )
+
+=cut
+
+sub search_albums {
+	my($self, %args) = @_;
+	my $ret = $self->_call('search.albums', %args);
+	return $ret;
+}
+
+=item $obj->search_playlists( )
+
+=cut
+
+sub search_playlists {
+	my($self, %args) = @_;
+	my $ret = $self->_call('search.playlists', %args);
+	return $ret;
+}
+
+=item $obj->artist_about( )
+
+=cut
+
+sub artist_about {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.about', %args);
+	return $ret;
+}
+
+=item $obj->album_about( )
+
+=cut
+
+sub album_about {
+	my($self, %args) = @_;
+	my $ret = $self->_call('album.about', %args);
+	return $ret;
+}
+
+
+=item $obj->song_about( )
+
+=cut
+
+sub song_about {
+	my($self, %args) = @_;
+	my $ret = $self->_call('song.about', %args);
+	return $ret;
+}
+
+
+=item $obj->playlist_about( )
+
+=cut
+
+sub playlist_about {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.about', %args);
+	return $ret;
+}
+
+=item $obj->album_getSongs( )
+
+=cut
+
+sub album_getSongs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('album.getSongs', %args);
+	return $ret;
+}
+
+=item $obj->artist_getAlbums( )
+
+=cut
+
+sub artist_getAlbums {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.getAlbums', %args);
+	return $ret;
+}
+
+=item $obj->artist_getSimilar( )
+
+=cut
+
+sub artist_getSimilar {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.getSimilar', %args);
+	return $ret;
+}
+
+=item $obj->artist_getSongs( )
+
+=cut
+
+sub artist_getSongs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.getSongs', %args);
 	return $ret;
 }
 
@@ -116,22 +297,22 @@ sub session_start {
 
 =cut
 
-sub session_id {
-	return shift->{_session_id};
-}
-
 ################################################################################
 
 sub _call {
 	my($self, $method, %param) = @_;
-	my $json = $self->{_json}->encode({
-		header     => {sessionID => ''},
+
+	my $req = {
+		header     => {sessionID => $self->sessionID},
 		method     => $method,
 		parameters => \%param,
-	});
+	};
+
+	use Data::Dumper; print STDERR "REQUEST: ", Dumper($req);
+
+	my $json = $self->{_json}->encode($req);
 	my $url = sprintf("%s://%s/%s/%s", ($self->{_https} ? 'https' : 'http'),
 		map($self->{$_}, qw(_service _path _api_version)));
-	print STDERR "JSON: $json\n";
 	my $response = $self->{_ua}->post($url,
 		'Content-Type' => 'text/json',
 		'Content'      => $json,
@@ -144,10 +325,15 @@ sub _call {
 	}
 	else {
     	$ret = {
-    		header => {sessionID => $self->session_id},
-    		fault  => {code => 512, message => $response->status_line},
+    		header => {sessionID => $self->sessionID},
+    		fault  => {
+    			code    => INTERNAL_FAULT,
+	    		message => $response->status_line,
+	    	},
     	};
 	}
+
+	use Data::Dumper; print STDERR "RESPONSE: ", Dumper($ret);
 
 	return WWW::Grooveshark::Response->new($ret);
 }
@@ -171,7 +357,7 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-Version 0.00_01  (July 1, 2009)
+This document describes C<WWW::Grooveshark> version 0.00_01 (July 3, 2009).
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.

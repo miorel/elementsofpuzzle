@@ -1,11 +1,130 @@
-use Test::More tests => 2;
-BEGIN { use_ok('WWW::Grooveshark') };
+use Test::More tests => 28;
+
+my $config_file;
+BEGIN {
+	$config_file = 'config';
+	diag(<<"NOTE");
+
+
+NOTE: This test takes additional configuration.
+See $config_file.example for details.
+
+
+NOTE
+	use_ok('WWW::Grooveshark')
+};
 
 my $gs;
 ok($gs = WWW::Grooveshark->new(), 'new() returns true value');
 
-our($api_key);
+SKIP: {
+	# configurable values
+	our($api_key);
 
-require 'config.pl';
+	# grab the config file
+	if(-e $config_file) {
+		require $config_file;
+	}
 
-$gs->session_start(apiKey => $api_key);
+    my $conn_ok;
+    eval 'use Net::Config qw(%NetConfig); $conn_ok = $NetConfig{test_hosts}';
+    skip 'Net::Config needed for network-related tests', 26 if $@;
+    skip 'No network connection', 26 unless $conn_ok;
+
+	my $r;
+
+	# test sessionless service_ping()
+	ok($gs->service_ping, 'sessionless service_ping() returns true value');
+
+	diag_skip('API key not defined', 25) unless defined $api_key;
+
+	# test session_start()
+	ok($r = $gs->session_start(apiKey => $api_key),
+		'session_start() returns true value');
+
+	diag_skip('Problem starting session: ' . $r->fault_line, 24)
+		if $r->is_fault;
+
+	# test service_ping()
+	ok($gs->service_ping, 'service_ping() returns true value');
+	
+	# test session_id()
+	ok($gs->sessionID, 'sessionID() returns true value');
+	is($r->sessionID, $gs->sessionID, 'sessionID() returns expected value');
+	
+	# test session_get()
+	ok($r = $gs->session_get, 'session_get() returns true value');
+	is($r->sessionID, $gs->sessionID, 'session_get() returns expected value');
+	
+	my %search = (query => 'The Beatles', limit => 1);
+	my($album_id, $artist_id, $playlist_id, $song_id);
+
+	# test search_albums()
+	$r = $gs->search_albums(%search);
+	ok($r->albums, 'search_albums() returns expected structure');
+	$album_id = ($r->albums)[0]->{albumID};
+
+	# test album_about()
+	ok($r = $gs->album_about(albumID => $album_id),
+		'album_about() returns true value');
+	is($r->albumID, $album_id, 'album_about() returns expected value');
+
+	# test album_getSongs()
+	ok($r = $gs->album_getSongs(albumID => $album_id, limit => 1),
+		'album_getSongs() returns true value');
+	is(($r->songs)[0]->{albumID}, $album_id,
+		'album_getSongs() returns expected value');
+
+	# test search_artists()
+	$r = $gs->search_artists(%search);
+	ok($r->artists, 'search_artists() returns expected structure');
+	$artist_id = ($r->artists)[0]->{artistID};
+
+	# test artist_about()
+	ok($r = $gs->artist_about(artistID => $artist_id),
+		'artist_about() returns true value');
+	is($r->artistID, $artist_id, 'artist_about() returns expected value');
+
+	# test artist_getAlbums()
+	ok($r = $gs->artist_getAlbums(artistID => $artist_id, limit => 1),
+		'artist_getAlbums() returns true value');
+	is(($r->albums)[0]->{artistID}, $artist_id,
+		'artist_getAlbums() returns expected value');
+
+	# test artist_getSongs()
+	ok($r = $gs->artist_getSongs(artistID => $artist_id, limit => 1),
+		'artist_getSongs() returns true value');
+	is(($r->songs)[0]->{artistID}, $artist_id,
+		'artist_getSongs() returns expected value');
+
+	# test artist_getSimilar()
+	ok($gs->artist_getSimilar(artistID => $artist_id, limit => 1)->artists,
+		'artist_getSimilar() returns expected structure');
+
+	# test search_playlists()
+	$r = $gs->search_playlists(%search);
+	ok($r->playlists, 'search_playlists() returns expected structure');
+	$playlist_id = ($r->playlists)[0]->{playlistID};
+
+	# test playlist_about()
+	ok($r = $gs->playlist_about(playlistID => $playlist_id),
+		'playlist_about() returns true value');
+	is($r->playlistID, $playlist_id,
+		'playlist_about() returns expected value');
+
+	# test search_songs()
+	$r = $gs->search_songs(%search);
+	ok($r->songs, 'search_songs() returns expected structure');
+	$song_id = ($r->songs)[0]->{songID};
+
+	# test song_about()
+	ok($r = $gs->song_about(songID => $song_id),
+		'song_about() returns true value');
+	is($r->song->{songID}, $song_id, 'song_about() returns expected value');
+}
+
+sub diag_skip {
+	my $msg = shift;
+	diag($msg);
+	skip $msg, @_;
+}

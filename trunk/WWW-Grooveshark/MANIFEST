@@ -3,6 +3,7 @@ MANIFEST                                 This file
 META.yml                                 Module meta-data
 Makefile.PL                              Generate Makefile
 README                                   Useful information
+config.example                           
 examples/example.pl                      Example of something interesting
 lib/WWW/Grooveshark.pm                   Source for WWW::Grooveshark
 lib/WWW/Grooveshark/Response.pm          Source for WWW::Grooveshark::Response

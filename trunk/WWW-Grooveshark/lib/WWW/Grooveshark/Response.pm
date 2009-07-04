@@ -6,13 +6,31 @@ WWW::Grooveshark::Response - Grooveshark API response message
 
 =head1 SYNOPSIS
 
-  use WWW::Grooveshark;
+Response objects are returned by the API methods of L<WWW::Grooveshark>:
 
-  # something interesting happens
+  # some code to prepare $gs
+  
+  my $response = $gs->search_songs(query => 'The Beatles');
+  
+  if($response->is_fault) {
+      print STDERR $response->fault_line;
+  }
+  else {
+      for($response->result('songs')) {
+          # do something interesting
+      }
+  }
 
 =head1 DESCRIPTION
 
-Some module is a wonderful piece of software.
+C<WWW::Grooveshark::Response> encapsulates a response message from the
+Grooveshark API.  A response consists of a header (sessionID, hostname, etc.)
+and either a result (in the case of "success" responses) or a fault code and
+message (in case of errors).
+
+Internally, this class is just a C<bless>ed decoding of the JSON response, so
+if you're too lazy or stubborn to familiarize yourself with this interface,
+you may access the data structure directly like any hashref.
 
 =cut
 
@@ -21,33 +39,54 @@ use strict;
 use warnings;
 
 use Carp;
+use Exporter;
+use NEXT 0.61; # earlier versions have the NEXT::AUTOLOAD bug
 
-use WWW::Grooveshark;
+=head1 EXPORTS
 
-use constant {
-	MALFORMED_REQUEST_ERROR             => 1,
-	NO_METHOD_ERROR                     => 2,
-	MISSING_OR_INVALID_PARAMETERS_ERROR => 4,
-	SESSION_ERROR                       => 8,
-	AUTHENTICATION_ERROR                => 16,
-	AUTHENTICATION_FAILED_ERROR         => 32,
-	STREAM_ERROR                        => 64,
-	API_KEY_ERROR                       => 128,
-	USER_BLOCKED_ERROR                  => 256,
-	INTERNAL_ERROR                      => 512,
-	SSL_ERROR                           => 1024,
-};
+None by default.  The ":fault" tag can bring the integer fault constants in
+your namespace with: C<use WWW::Grooveshark::Response qw(:fault)>.  The
+constants are listed as part of the documentation of the C<fault_code>
+method below.
 
-our @ISA     = ();
-our $VERSION = $WWW::Grooveshark::VERSION;
+=cut
+
+my %fault = (
+	MALFORMED_REQUEST_FAULT             => 1,
+	NO_METHOD_FAULT                     => 2,
+	MISSING_OR_INVALID_PARAMETERS_FAULT => 4,
+	SESSION_FAULT                       => 8,
+	AUTHENTICATION_FAULT                => 16,
+	AUTHENTICATION_FAILED_FAULT         => 32,
+	STREAM_FAULT                        => 64,
+	API_KEY_FAULT                       => 128,
+	USER_BLOCKED_FAULT                  => 256,
+	INTERNAL_FAULT                      => 512,
+	SSL_FAULT                           => 1024,
+ 	ACCESS_RIGHTS_FAULT                 => 2048,
+	NO_RESOURCE_FAULT                   => 4096,
+	OFFLINE_FAULT                       => 8192,
+);
+while(my($key, $val) = each %fault) {
+	eval "use constant $key => $val;";
+}
+
+our @ISA         = qw(Exporter);
+our %EXPORT_TAGS = (fault => [keys %fault]);
+our @EXPORT_OK   = @{$EXPORT_TAGS{fault}};
+
+our $VERSION = '0.00_01';
+$VERSION = eval $VERSION;
+
+our $AUTOLOAD;
 
 =head1 CONSTRUCTOR
 
-Description of reason for constructor
+If you need to "manually" craft an object of this class, this is how.
 
 =over 4
 
-=item WWW::Grooveshark::Response->new( [ \%OBJECT | %OBJECT ] )
+=item WWW::Grooveshark::Response->new( \%OBJECT | %OBJECT )
 
 Builds a L<WWW::Grooveshark::Response> object from the given hashref or hash.
 
@@ -70,19 +109,39 @@ sub new {
 
 =back
 
-=head1 METHODS
-
-=over 4
-
-=item $obj->is_fault( )
-
-Checks whether this response object represents a fault.
+=head1 AUTOLOADED METHODS
 
 =cut
 
-sub is_fault {
-	return exists(shift->{fault});	
+sub AUTOLOAD {
+	my $self = shift;
+	
+	croak 'Not a reference' unless ref($self);
+
+	my($method) = ($AUTOLOAD =~ /(\w*)$/);
+
+	if($self->is_fault) {
+		carp $self->fault_line;
+		carp 'Uh oh, autoloading on a fault response, this could end badly';
+	}
+	else {
+		my $res = $self->{result};
+		if(ref($res)) {
+			my %res = %$res;
+			return $self->result($method) if exists($res{$method});
+		}	
+	}
+
+	eval { return $self->NEXT::ACTUAL::AUTOLOAD(@_); };
+	croak "Problem while autoloading $AUTOLOAD: $@" if $@;
 }
+
+# provided to appease AUTOLOAD
+sub DESTROY {}
+
+=head1 STANDARD METHODS
+
+=over 4
 
 =item $obj->header( $KEY )
 
@@ -91,40 +150,67 @@ Returns the header element corresponding to $KEY.
 =cut
 
 sub header {
-	return shift->{header}->{shift};
+	return shift->{header}->{shift()};
 }
 
-=item $obj->session_id( )
+=item $obj->sessionID( )
 
 Returns the ID of the session that created this response object.  This is a
 shortcut for passing "sessionID" to the C<header> method.
 
 =cut
 
-sub session_id {
+sub sessionID {
 	return shift->header('sessionID');
 }
 
-=item $obj->result( $KEY )
+=item $obj->is_fault( )
 
-Returns the result element corresponding to $KEY.  This will probably only give
-a meaningful result if C<is_error> is false.
+Checks whether this response object represents a fault.
+
+=cut
+
+sub is_fault {
+	return exists(shift->{fault});
+}
+
+=item $obj->result( [ $KEY ] )
+
+Returns the result element corresponding to $KEY, or the whole result part of
+the response if no $KEY is specified.  This will probably only give a
+meaningful result if C<is_fault> is false.  In C<scalar> context, this method
+will return references where applicable.  In list context, it will
+dereference arrayrefs and hashrefs before returning them.
 
 =cut
 
 sub result {
-	return shift->{result}->{shift};
+	my $res = shift->{result};
+	
+	# is there an argument? grab the proper key, otherwise the whole result
+	my $ret = scalar(@_) ? (ref($res) ? $res->{shift()} : undef) : $res;
+	
+	# take care of list context
+	if(wantarray) {
+		my $ref = ref($ret);
+		if($ref) {
+			return @$ret if $ref eq 'ARRAY';
+			return %$ret if $ref eq 'HASH';
+		}
+	}
+	
+	return $ret;
 }
 
 =item $obj->fault( $KEY )
 
 Returns the fault element corresponding to $KEY.  This will only give a
-meaningful result if C<is_error> is true.
+meaningful result if C<is_fault> is true.
 
 =cut
 
 sub fault {
-	return shift->{fault}->{shift};
+	return shift->{fault}->{shift()};
 }
 
 =item $obj->fault_code( )
@@ -132,63 +218,65 @@ sub fault {
 Returns the integer code of the fault represented by this response object.
 This is a shortcut for passing "code" to the C<fault> method.  Check
 Grooveshark's API for the most up-to-date information about fault codes.  The
-standard set at the time of this writing was:
+standard set at the time of this writing is listed below, along with the
+corresponding names for the constants that may be exported by this module (in
+parentheses).
 
 =over 4
 
-=item 1 Malformed request
+=item 1 Malformed request (C<MALFORMED_REQUEST_FAULT>)
 
 Some part of the request, most likely the parameters, was malformed.
 
-=item 2 No method
+=item 2 No method (C<NO_METHOD_FAULT>)
 
 The requested method does not exist.
 
-=item 4 Missing or invalid parameters
+=item 4 Missing or invalid parameters (C<MISSING_OR_INVALID_PARAMETERS_FAULT>)
 
 Method parameters were missing or incorrectly formatted.
 
-=item 8 Session
+=item 8 Session (C<SESSION_FAULT>)
 
 Most likely the session has expired, or it failed to start.
 
-=item 16 Authentication
+=item 16 Authentication (C<AUTHENTICATION_FAULT>)
 
 Authentication is required to access the invoked method.
 
-=item 32 Authentication failed
+=item 32 Authentication failed (C<AUTHENTICATION_FAILED_FAULT>)
 
 The supplied user credentials were incorrect.
 
-=item 64 Stream
+=item 64 Stream (C<STREAM_FAULT>)
 
 There was an error creating a stream key, or returning a stream server URL.
 
-=item 128 API key
+=item 128 API key (C<API_KEY_FAULT>)
 
 The supplied API key is invalid, or is no longer active.
 
-=item 256 User blocked
+=item 256 User blocked (C<USER_BLOCKED_FAULT>)
 
 A user's privacy restrictions have blocked access to their account through the API.
 
-=item 512 Internal
+=item 512 Internal (C<INTERNAL_FAULT>)
 
 There was an error internal to the API while fulfilling the request.
 
-=item 1024 SSL
+=item 1024 SSL (C<SSL_FAULT>)
 
 SSL is required to access the requested method.
 
-=item 2048 Access rights
+=item 2048 Access rights (C<ACCESS_RIGHTS_FAULT>)
 
 Your API key does not have the proper access rights to invoke the requested method.
 
-=item 4096 No resource
+=item 4096 No resource (C<NO_RESOURCE_FAULT>)
 
 Something doesn't exist, perhaps a userID, artistID, etc.
 
-=item 8192 Offline
+=item 8192 Offline (C<OFFLINE_FAULT>)
 
 The requested method is offline and is temporarily unavailable.
 
@@ -232,7 +320,7 @@ Returns an HTTP style status line, containing the fault code and message.
 
 sub fault_line {
 	my $self = shift;
-	my $ret = $self->fault_code . ' ' . $self->fault_message;
+	my $ret = sprintf("%s %s\n", $self->fault_code, $self->fault_message);
 	# add details here perhaps?
 	return $ret;
 }
@@ -260,11 +348,12 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-This module is distributed with L<WWW::Grooveshark> and therefore takes its
-version from that module.
+This document describes C<WWW::Grooveshark::Response> version 0.00_01
+(July 3, 2009).
 
-The latest version of both components is hosted on Google Code as part of
-<http://elementsofpuzzle.googlecode.com/>.
+This module is distributed with L<WWW::Grooveshark> and therefore takes its
+version from that module.  The latest version of both components is hosted on
+Google Code as part of <http://elementsofpuzzle.googlecode.com/>.
 
 =head1 COPYRIGHT AND LICENSE
 

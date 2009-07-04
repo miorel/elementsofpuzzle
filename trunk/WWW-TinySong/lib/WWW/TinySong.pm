@@ -485,7 +485,7 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-Version 1.02  (June 26, 2009)
+This document describes C<WWW::TinySong> version 1.02 (July 3, 2009).
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
