@@ -30,8 +30,11 @@ DEPENDENCIES
 This module requires the following other modules:
 
   Carp
+  Digest::MD5
+  Exporter
   JSON::Any
   LWP::UserAgent
+  NEXT 0.61
 
 CONTACT
 

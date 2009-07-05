@@ -3,7 +3,8 @@ Revision history for WWW::Grooveshark
 
 July 4, 2009
 ------------
- * added the popular API methods to WWW::Grooveshark
+ * added the popular, session, and most of the song API methods to
+   WWW::Grooveshark
 
 July 3, 2009
 ------------

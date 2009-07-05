@@ -21,6 +21,7 @@ use strict;
 use warnings;
 
 use Carp;
+use Digest::MD5 qw(md5_hex);
 use JSON::Any;
 
 use WWW::Grooveshark::Response qw(:fault);
@@ -45,9 +46,16 @@ passed in as key-value pairs, as in a hash.  Accepted options are:
 
 =item I<service>
 
+The hostname to use for the Grooveshark API service.  Defaults to
+"api.grooveshark.com".
+
 =item I<path>
 
+Path (relative to the hostname) to request for API calls.  Defaults to "ws".
+
 =item I<api_version>
+
+Version of the Grooveshark API you plan on using.  Defaults to 1.0.
 
 =item I<https>
 
@@ -79,7 +87,7 @@ sub new {
 	my($pkg, %opts) = @_;
 
 	# user-agent constructor args
-	my $ua_args = $opts{useragent_class} || {};
+	my $ua_args = $opts{useragent_args} || {};
 	
 	# user-agent string
 	$ua_args->{agent} = $opts{agent} if defined $opts{agent};
@@ -212,6 +220,16 @@ sub playlist_about {
 	return $ret;
 }
 
+=item $gs->playlist_getSongs( )
+
+=cut
+
+sub playlist_getSongs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.getSongs', %args);
+	return $ret;
+}
+
 =back
 
 =head2 POPULAR
@@ -316,17 +334,52 @@ sub service_ping {
 
 =over 4
 
+=item $gs->session_createUserAuthToken( )
+
+=cut
+
+sub session_createUserAuthToken {
+	my($self, %args) = @_;
+	
+	# make hashpass, unless it already exists
+	if(exists($args{hashpass})) {
+		delete $args{pass};
+	}
+	else {
+		if(exists($args{username}) && exists($args{pass})) {
+			$args{hashpass} = md5_hex($args{username}, md5_hex($args{pass}));
+			delete $args{pass};
+		}
+		else {
+			carp 'Need username and pass to create authentication token';
+		}
+	}
+	
+	my $ret = $self->_call('session.createUserAuthToken', %args);		
+	return $ret;
+}
+
 =item $gs->session_destroy( )
 
 =cut
 
 sub session_destroy {
-	my($self, %args) = @_;	
+	my($self, %args) = @_;
 	my $ret = $self->_call('session.destroy', %args);
 	
 	# kill the stored session ID if destroying was successful
 	$self->{_session_id} = undef unless $ret->is_fault;
 		
+	return $ret;
+}
+
+=item $gs->session_destroyAuthToken( )
+
+=cut
+
+sub session_destroyAuthToken {
+	my($self, %args) = @_;
+	my $ret = $self->_call('session.destroyAuthToken', %args);		
 	return $ret;
 }
 
@@ -341,6 +394,36 @@ sub session_get {
 	# save the session ID given in the response
 	$self->{_session_id} = $ret->sessionID unless $ret->is_fault;
 	
+	return $ret;
+}
+
+=item $gs->session_getUserID( )
+
+=cut
+
+sub session_getUserID {
+	my($self, %args) = @_;
+	my $ret = $self->_call('session.getUserID', %args);		
+	return $ret;
+}
+
+=item $gs->session_loginViaAuthToken( )
+
+=cut
+
+sub session_loginViaAuthToken {
+	my($self, %args) = @_;
+	my $ret = $self->_call('session.loginViaAuthToken', %args);		
+	return $ret;
+}
+
+=item $gs->session_logout( )
+
+=cut
+
+sub session_logout {
+	my($self, %args) = @_;
+	my $ret = $self->_call('session.logout', %args);		
 	return $ret;
 }
 
@@ -382,6 +465,56 @@ sub session_start {
 sub song_about {
 	my($self, %args) = @_;
 	my $ret = $self->_call('song.about', %args);
+	return $ret;
+}
+
+=item $gs->song_getSimilar( )
+
+=cut
+
+sub song_getSimilar {
+	my($self, %args) = @_;
+	my $ret = $self->_call('song.getSimilar', %args);
+	return $ret;
+}
+
+=item $gs->song_getStreamKey( )
+
+=cut
+
+sub song_getStreamKey {
+	my($self, %args) = @_;
+	my $ret = $self->_call('song.getStreamKey', %args);
+	return $ret;
+}
+
+=item $gs->song_getStreamUrl( )
+
+=cut
+
+sub song_getStreamUrl {
+	my($self, %args) = @_;
+	my $ret = $self->_call('song.getStreamUrl', %args);
+	return $ret;
+}
+
+=item $gs->song_getStreamUrlEx( )
+
+=cut
+
+sub song_getStreamUrlEx {
+	my($self, %args) = @_;
+	my $ret = $self->_call('song.getStreamUrlEx', %args);
+	return $ret;
+}
+
+=item $gs->song_getWidgetEmbedCode( )
+
+=cut
+
+sub song_getWidgetEmbedCode {
+	my($self, %args) = @_;
+	my $ret = $self->_call('song.getWidgetEmbedCode', %args);
 	return $ret;
 }
 
