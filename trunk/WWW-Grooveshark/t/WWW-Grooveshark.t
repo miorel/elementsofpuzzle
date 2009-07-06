@@ -1,8 +1,8 @@
-use Test::More tests => 51;
+use Test::More tests => 69;
 
 my $config_file;
 BEGIN {
-	$config_file = 'config';
+	$config_file = 'test_config';
 	diag(<<"NOTE");
 
 
@@ -18,9 +18,7 @@ NOTE
 is(INTERNAL_FAULT, WWW::Grooveshark::Response::INTERNAL_FAULT,
 	'constant importing succeeded');
 
-my $gs;
-
-ok($gs = WWW::Grooveshark->new, 'new() returns true value');
+my $gs = new_ok('WWW::Grooveshark');
 
 SKIP: {
 	# configurable values
@@ -33,22 +31,22 @@ SKIP: {
 
     my $conn_ok;
     eval 'use Net::Config qw(%NetConfig); $conn_ok = $NetConfig{test_hosts}';
-    skip 'Net::Config needed for network-related tests', 47 if $@;
-    skip 'No network connection', 47 unless $conn_ok;
+    skip 'Net::Config needed for network-related tests', 65 if $@;
+    skip 'No network connection', 65 unless $conn_ok;
 
 	my $r;
 
 	# test sessionless service_ping()
 	ok($gs->service_ping, 'sessionless service_ping() returns true value');
 
-	diag_skip('API key not defined, skipping remaining tests', 46)
+	diag_skip('API key not defined, skipping remaining tests', 64)
 		unless defined $api_key;
 
 	# test session_start()
 	ok($r = $gs->session_start(apiKey => $api_key),
 		'session_start() returns true value');
 
-	diag_skip('Problem starting session: ' . $r->fault_line, 45)
+	diag_skip('Problem starting session: ' . $r->fault_line, 63)
 		if $r->is_fault;
 
 	# test service_ping()
@@ -64,6 +62,7 @@ SKIP: {
 	
 	my %search = (query => 'The Beatles', limit => 1);
 	my($album_id, $artist_id, $playlist_id, $song_id);
+	my($ap_song_id, @song_ids);
 
 	# test search_albums()
 	ok($gs->search_albums(%search)->albums,
@@ -135,8 +134,9 @@ SKIP: {
 		'search_songs() returns expected structure');
 
 	# test popular_getSongs()
-	$r = $gs->popular_getSongs(limit => 1);
+	$r = $gs->popular_getSongs(limit => 3);
 	ok($r->songs, 'popular_getSongs() returns expected structure');
+	@song_ids = map {$_->{songID}} $r->songs;
 	$song_id = ($r->songs)[0]->{songID};
 
 	# test song_about()
@@ -170,9 +170,32 @@ SKIP: {
 	ok($gs->song_getWidgetEmbedCode(songID => $song_id)->embed,
 		'song_getWidgetEmbedCode() returns expected structure');
 
+	# test song_getWidgetEmbedCodeFbml()
+	like($gs->song_getWidgetEmbedCodeFbml(songID => $song_id)->embed,
+		qr/^<fb/i, 'song_getWidgetEmbedCodeFbml() returns expected structure');
+
+	# test autoplay_start()
+	ok($ap_song_id = $gs->autoplay_start(songIDs => \@song_ids)
+		->autoplaySongID, 'autoplay_start() returns expected structure');
+	
+	# test autoplay_smile()
+	ok(!$gs->autoplay_smile(autoplaySongID => $ap_song_id)->is_fault,
+		'autoplay_smile() works as expected');
+
+	# test autoplay_getNextSong()
+	ok($ap_song_id = $gs->autoplay_getNextSong->autoplaySongID,
+		'autoplay_getNextSong() returns expected structure');
+		
+	# test autoplay_frown()
+	ok(!$gs->autoplay_frown(autoplaySongID => $ap_song_id)->is_fault,
+		'autoplay_frown() works as expected');
+	
+	# test autoplay_stop()
+	ok(!$gs->autoplay_stop->is_fault, 'autoplay_stop() works as expected');
+
 	SKIP: {
 		diag_skip('Username or password not defined, ' .
-			'skipping tests requiring login', 8)
+			'skipping tests requiring login', 20)
 			unless defined($user) && defined($pass);
 		
 		my($auth_token, $user_id);
@@ -195,6 +218,93 @@ SKIP: {
 			'session_getUserID() returns true value');
 		is($user_id, $r->result,
 			'session_getUserID() returns expected value');
+
+		# test user_getPlaylists()
+		ok($gs->user_getPlaylists(userID => $user_id, limit => 1)->playlists,
+			'user_getPlaylists() returns expected structure');
+
+		if($gs->song_about(songID => $song_id)->song->{isFavorite}) {
+			# test user_getFavoriteSongs()
+			ok($r = $gs->user_getFavoriteSongs(userID => $user_id,
+				limit => 1), 'user_getFavoriteSongs() returns true value');
+			ok($r->songs->[0]->{isFavorite},
+				'user_getFavoriteSongs() returns expected value');
+		
+			# test song_unfavorite()
+			ok(!$gs->song_unfavorite(songID => $song_id)->is_fault,
+				'song_unfavorite() works as expected');
+
+			# test song_favorite()
+			ok(!$gs->song_favorite(songID => $song_id)->is_fault,
+				'song_favorite() works as expected');
+		}
+		else {
+			# test song_favorite()
+			ok(!$gs->song_favorite(songID => $song_id)->is_fault,
+				'song_favorite() works as expected');
+
+			# test user_getFavoriteSongs()
+			ok($r = $gs->user_getFavoriteSongs(userID => $user_id,
+				limit => 1), 'user_getFavoriteSongs() returns true value');
+			ok($r->songs->[0]->{isFavorite},
+				'user_getFavoriteSongs() returns expected value');
+
+			# test song_unfavorite()
+			ok(!$gs->song_unfavorite(songID => $song_id)->is_fault,
+				'song_unfavorite() works as expected');			
+		}
+
+		# test playlist_create()
+		ok($playlist_id = $gs->playlist_create(name => 'test')->playlistID,
+			'playlist_create() returns expected structure');
+		
+		# test playlist_addSong()
+		is(scalar(@song_ids), scalar(grep {!$_->is_fault}
+			map {$gs->playlist_addSong(playlistID => $playlist_id,
+			songID => $_)} @song_ids),
+			'playlist_addSong() works as expected');
+
+		# test playlist_removeSong()
+		ok(!$gs->playlist_removeSong(playlistID => $playlist_id,
+			position => scalar(@song_ids))->is_fault,
+			'playlist_removeSong() works as expected');
+
+		# test playlist_moveSong()
+		ok(!$gs->playlist_moveSong(playlistID => $playlist_id,
+			position => 1, newPosition => 2)->is_fault,
+			'playlist_moveSong() works as expected');
+
+		my $remark;
+		
+		$remark = 'Thre may be a server-side error in ' .
+			'playlist replacing'
+			. ' through the API';
+		diag($remark);
+		TODO: {
+			local $TODO = $remark;
+
+			# test playlist_replace()
+			ok(!$gs->playlist_replace(playlistID => $playlist_id,
+				songIDs => \@song_ids),
+				'playlist_replace() works as expected');
+		}
+		
+		$remark = 'There may be a server-side bug in ' .
+			'playlist renaming and deletion'
+			. ' through the API.';
+		diag($remark);
+		TODO: {
+			local $TODO = $remark;
+
+			# test playlist_rename()
+			ok(!$gs->playlist_rename(playlistID => $playlist_id, 	name =>
+				'API testing playlist')->is_fault,
+				'playlist_rename() works as expected');
+
+			# test playlist_delete()
+			ok(!$gs->playlist_delete(playlistID => $playlist_id)->is_fault,
+				'playlist_delete() works as expected');
+		};
 
 		# test session_logout()
 		ok($r = $gs->session_logout, 'session_logout() returns true value');

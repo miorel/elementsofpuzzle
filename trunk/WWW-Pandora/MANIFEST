@@ -3,9 +3,9 @@ MANIFEST                                 This file
 META.yml                                 Module meta-data
 Makefile.PL                              Generate Makefile
 README                                   Useful information
-test_config.example                      Example of test configuration
-lib/WWW/Grooveshark.pm                   Source for WWW::Grooveshark
-lib/WWW/Grooveshark/Response.pm          Source for WWW::Grooveshark::Response
-t/WWW-Grooveshark.t                      Test WWW::Grooveshark
+bin/some_script                          Program that does something
+examples/example.pl                      Example of something interesting
+lib/Some/Module.pm                       Source for Some::Module
+t/Some-Module.t                          Test Some::Module
 t/pod-coverage.t                         Test POD coverage
 t/pod.t                                  Test POD

@@ -59,6 +59,9 @@ Version of the Grooveshark API you plan on using.  Defaults to 1.0.
 
 =item I<https>
 
+Whether or not to use HTTPS for API calls.  Defaults to false, i.e. just use
+HTTP.
+
 =item I<agent>
 
 Value to use for the C<User-Agent> HTTP header.  Defaults to
@@ -204,6 +207,56 @@ sub artist_getSongs {
 
 =over 4
 
+=item $gs->autoplay_frown( )
+
+=cut
+
+sub autoplay_frown {
+	my($self, %args) = @_;
+	my $ret = $self->_call('autoplay.frown', %args);
+	return $ret;
+}
+
+=item $gs->autoplay_getNextSong( )
+
+=cut
+
+sub autoplay_getNextSong {
+	my($self, %args) = @_;
+	my $ret = $self->_call('autoplay.getNextSong', %args);
+	return $ret;
+}
+
+=item $gs->autoplay_smile( )
+
+=cut
+
+sub autoplay_smile {
+	my($self, %args) = @_;
+	my $ret = $self->_call('autoplay.smile', %args);
+	return $ret;
+}
+
+=item $gs->autoplay_start( )
+
+=cut
+
+sub autoplay_start {
+	my($self, %args) = @_;
+	my $ret = $self->_call('autoplay.start', %args);
+	return $ret;
+}
+
+=item $gs->autoplay_stop( )
+
+=cut
+
+sub autoplay_stop {
+	my($self, %args) = @_;
+	my $ret = $self->_call('autoplay.stop', %args);
+	return $ret;
+}
+
 =back
 
 =head2 PLAYLIST
@@ -220,6 +273,36 @@ sub playlist_about {
 	return $ret;
 }
 
+=item $gs->playlist_addSong( )
+
+=cut
+
+sub playlist_addSong {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.addSong', %args);
+	return $ret;
+}
+
+=item $gs->playlist_create( )
+
+=cut
+
+sub playlist_create {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.create', %args);
+	return $ret;
+}
+
+=item $gs->playlist_delete( )
+
+=cut
+
+sub playlist_delete {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.delete', %args);
+	return $ret;
+}
+
 =item $gs->playlist_getSongs( )
 
 =cut
@@ -227,6 +310,46 @@ sub playlist_about {
 sub playlist_getSongs {
 	my($self, %args) = @_;
 	my $ret = $self->_call('playlist.getSongs', %args);
+	return $ret;
+}
+
+=item $gs->playlist_moveSong( )
+
+=cut
+
+sub playlist_moveSong {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.moveSong', %args);
+	return $ret;
+}
+
+=item $gs->playlist_removeSong( )
+
+=cut
+
+sub playlist_removeSong {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.removeSong', %args);
+	return $ret;
+}
+
+=item $gs->playlist_rename( )
+
+=cut
+
+sub playlist_rename {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.rename', %args);
+	return $ret;
+}
+
+=item $gs->playlist_replace( )
+
+=cut
+
+sub playlist_replace {
+	my($self, %args) = @_;
+	my $ret = $self->_call('playlist.replace', %args);
 	return $ret;
 }
 
@@ -468,6 +591,16 @@ sub song_about {
 	return $ret;
 }
 
+=item $gs->song_favorite( )
+
+=cut
+
+sub song_favorite {
+	my($self, %args) = @_;
+	my $ret = $self->_call('song.favorite', %args);
+	return $ret;
+}
+
 =item $gs->song_getSimilar( )
 
 =cut
@@ -518,11 +651,58 @@ sub song_getWidgetEmbedCode {
 	return $ret;
 }
 
+=item $gs->song_getWidgetEmbedCodeFbml( )
+
+=cut
+
+sub song_getWidgetEmbedCodeFbml {
+	my $ret = shift->song_getWidgetEmbedCode(@_);
+
+	unless($ret->is_fault) {
+		my $code = $ret->{result}->{embed};
+		$code =~ /<embed (.*?)>\s*<\/embed>/;		
+		$code = "<fb:swf swf$1 />";
+		$ret->{result}->{embed} = $code;	
+	}
+
+	return $ret;
+}
+
+=item $gs->song_unfavorite( )
+
+=cut
+
+sub song_unfavorite {
+	my($self, %args) = @_;
+	my $ret = $self->_call('song.unfavorite', %args);
+	return $ret;
+}
+
 =back
 
 =head2 USER
 
 =over 4
+
+=item $gs->user_getFavoriteSongs( )
+
+=cut
+
+sub user_getFavoriteSongs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('user.getFavoriteSongs', %args);
+	return $ret;
+}
+
+=item $gs->user_getPlaylists( )
+
+=cut
+
+sub user_getPlaylists {
+	my($self, %args) = @_;
+	my $ret = $self->_call('user.getPlaylists', %args);
+	return $ret;
+}
 
 =back
 
@@ -539,10 +719,8 @@ sub _call {
 		parameters => \%param,
 	};
 
-	use Data::Dumper; print STDERR "REQUEST: ", Dumper($req);
-
 	my $json = $self->{_json}->encode($req);
-	my $url = sprintf("%s://%s/%s/%s", ($self->{_https} ? 'https' : 'http'),
+	my $url = sprintf("%s://%s/%s/%s/", ($self->{_https} ? 'https' : 'http'),
 		map($self->{$_}, qw(_service _path _api_version)));
 	my $response = $self->{_ua}->post($url,
 		'Content-Type' => 'text/json',
@@ -563,8 +741,6 @@ sub _call {
 	    	},
     	};
 	}
-
-	use Data::Dumper; print STDERR "RESPONSE: ", Dumper($ret);
 
 	return WWW::Grooveshark::Response->new($ret);
 }

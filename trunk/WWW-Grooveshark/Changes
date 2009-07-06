@@ -1,6 +1,13 @@
 Revision history for WWW::Grooveshark
 =====================================
 
+July 6, 2009
+------------
+ * added the autoplay, playlist, user, and the rest of the song API methods to
+   WWW::Grooveshark
+ * note: encountered some server-side errors during testing of playlist
+   methods
+
 July 4, 2009
 ------------
  * added the popular, session, and most of the song API methods to
