@@ -1,8 +1,25 @@
 package Some::Module;
 
+use 5.006;
+use strict;
+use warnings;
+
 =head1 NAME
 
 Some::Module - Do something interesting
+
+=head1 VERSION
+
+This document describes "Some::Module" version 0.01 (July 6, 2009).
+
+The latest version is hosted on Google Code as part of
+L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
+contributed to CPAN: L<http://search.cpan.org/dist/Some-Module/>.
+
+=cut
+
+our $VERSION = '0.01';
+$VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
@@ -16,16 +33,11 @@ Some module is a wonderful piece of software.
 
 =cut
 
-use 5.006;
-use strict;
-use warnings;
-
 use Carp;
 use Exporter;
 
 our @EXPORT_OK = ();
 our @ISA       = qw(Exporter);
-our $VERSION   = '0.01';
 
 =head1 FUNCTIONS
 
@@ -72,15 +84,7 @@ me an e-mail.
 
 =head1 AUTHOR
 
-Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
-
-=head1 VERSION
-
-This document describes "Some::Module" version 0.01 (July 6, 2009).
-
-The latest version is hosted on Google Code as part of
-L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
-contributed to CPAN: L<http://search.cpan.org/dist/Some-Module/>.
+Miorel-Lucian Palii E<lt>mlpalii@gmail.comE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -88,6 +92,7 @@ Copyright (C) 2009 by Miorel-Lucian Palii
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
-at your option, any later version of Perl 5 you may have available.
+at your option, any later version of Perl 5 you may have available.  See
+L<perlartistic>.
 
 =cut

@@ -1,8 +1,25 @@
 package WWW::TinySong;
 
+use 5.006;
+use strict;
+use warnings;
+
 =head1 NAME
 
 WWW::TinySong - Get free music links from tinysong.com
+
+=head1 VERSION
+
+This document describes C<WWW::TinySong> version 1.01_01 (July 7, 2009).
+
+The latest version is hosted on Google Code as part of
+L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
+contributed to CPAN: L<http://search.cpan.org/dist/WWW-TinySong/>.
+
+=cut
+
+our $VERSION = '1.01_01';
+$VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
@@ -44,10 +61,6 @@ to programmatically search its underlying database.
 
 =cut
 
-use 5.006;
-use strict;
-use warnings;
-
 use Carp;
 use CGI;
 use Exporter;
@@ -55,7 +68,6 @@ use HTML::Parser;
 
 our @EXPORT_OK = qw(link search);
 our @ISA       = qw(Exporter);
-our $VERSION   = '1.02';
 
 my($ua, $service, $retries);
 
@@ -483,20 +495,13 @@ me an e-mail.
 
 Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
-=head1 VERSION
-
-This document describes C<WWW::TinySong> version 1.02 (July 3, 2009).
-
-The latest version is hosted on Google Code as part of
-L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
-contributed to CPAN: L<http://search.cpan.org/dist/WWW-TinySong/>.
-
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2009 by Miorel-Lucian Palii
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
-at your option, any later version of Perl 5 you may have available.
+at your option, any later version of Perl 5 you may have available.  See
+L<perlartistic>.
 
 =cut

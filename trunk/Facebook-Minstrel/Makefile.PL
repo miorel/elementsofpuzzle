@@ -1,20 +1,19 @@
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-	NAME             => 'Some::Module',
-	ABSTRACT_FROM    => 'lib/Some/Module.pm',
-	VERSION_FROM     => 'lib/Some/Module.pm',
+	NAME             => 'Facebook::Minstrel',
+	ABSTRACT_FROM    => 'lib/Facebook/Minstrel.pm',
+	VERSION_FROM     => 'lib/Facebook/Minstrel.pm',
 	AUTHOR           => 'Miorel-Lucian Palii <mlpalii@gmail.com>',
 	LICENSE          => 'perl',
 	META_MERGE       => {resources =>
 		{
-			bugtracker => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Some-Module',
 			repository => 'http://elementsofpuzzle.googlecode.com/',
 		}},
 	MIN_PERL_VERSION => '5.006',
 	PREREQ_PM        =>
 		{
-			Carp => 0,
+			Carp     => 0,
+			Exporter => 0,
 		},
-	EXE_FILES        => ['bin/some_script'],
 );

@@ -1,24 +1,60 @@
 package WWW::Grooveshark;
 
+use 5.006;
+use strict;
+use warnings;
+
 =head1 NAME
 
 WWW::Grooveshark - Perl wrapper for the Grooveshark API
 
-=head1 SYNOPSIS
+=head1 VERSION
 
-  use WWW::Grooveshark;
+This document describes C<WWW::Grooveshark> version 0.01_01 (July 7, 2009).
 
-  # something interesting happens
-
-=head1 DESCRIPTION
-
-Some module is a wonderful piece of software.
+The latest version is hosted on Google Code as part of
+L<http://elementsofpuzzle.googlecode.com/>.
 
 =cut
 
-use 5.006;
-use strict;
-use warnings;
+our $VERSION = '0.01_01';
+$VERSION = eval $VERSION;
+
+=head1 SYNOPSIS
+
+Basic use is demonstrated here.  See L</"API METHODS"> for details.
+
+  use WWW::Grooveshark;
+
+  my $gs = WWW::Grooveshark->new(https => 1, agent => "my-nice-robot/0.1");
+
+  my $r = $gs->session_start(apiKey => $secret);
+  die $r->fault_line if $r->is_fault;
+  
+  for($gs->search_songs(query => "The Beatles", limit => 10)->songs) {
+      printf("%s", $_->{songName});
+      printf(" by %s", $_->{artistName});
+      printf(" on %s\n", $_->{albumName});
+      printf(" <%s>\n", $_->{liteUrl});
+  }
+  
+  $gs->session_destroy;
+
+=head1 DESCRIPTION
+
+Grooveshark is an internationally-available online music search, streaming,
+and recommendation service.  C<WWW::Grooveshark> wraps this service's API in
+an object-oriented Perl interface, allowing you to programmatically search
+for songs, artists, albums, or playlists; browse popular music; get song
+recommendations; manage playlists; and more.
+
+=head1 API KEYS
+
+...are needed to use the Grooveshark API.  E-mail
+E<lt>developers@grooveshark.comE<gt> to get one.  They'll probably also link
+you to the official API page, which seems to still be in beta.
+
+=cut
 
 use Carp;
 use Digest::MD5 qw(md5_hex);
@@ -28,12 +64,11 @@ use WWW::Grooveshark::Response qw(:fault);
 
 our @ISA = ();
 
-our $VERSION = '0.00_01';
-$VERSION = eval $VERSION;
-
 =head1 CONSTRUCTOR
 
-Description of reason for constructor
+To use this module, you'll have to create a C<WWW::Grooveshark> instance.  The
+default, argumentless constructor should be adequate, but customization is
+possible through key-value options.
 
 =over 4
 
@@ -77,7 +112,7 @@ newly-created object.  Defaults to L<LWP::UserAgent>.
 
 =item I<useragent_args>
 
-Hashref of arguments to pass to constructor of the aforementioned
+Hashref of arguments to pass to the constructor of the aforementioned
 C<useragent_class>.  Defaults to no arguments.
 
 =back
@@ -117,9 +152,17 @@ sub new {
 
 =head1 MANAGEMENT METHODS
 
+The following methods do not issue any API calls but deal with management of
+the C<WWW::Grooveshark> object itself.  Ideally, you won't have to touch these
+methods too often.  If you find yourself being insufficiently lazy, let me
+know how I can make this module smarter.
+
 =over 4
 
 =item $gs->sessionID( )
+
+Returns the Grooveshark API session ID, or C<undef> if there is no active
+session.
 
 =back
 
@@ -131,11 +174,61 @@ sub sessionID {
 
 =head1 API METHODS
 
+The methods listed here directly wrap the methods of Groveshark's JSON-RPC
+API.  As you may have noticed, there is a very complex mapping between the
+API's official methods and those of this interface: simply replace the
+period ('.') with an underscore ('_').  As with the constructor, pass
+arguments as hash-like key-value pairs, so for example, to get the 11th through
+20th most popular songs, I would:
+
+  my $response = $gs->popular_getSongs(limit => 10, page => 2);
+
+All API methods return L<WWW::Grooveshark::Response> objects, even in case of
+errors.  Make a habit of checking that method calls were successful:
+
+  die $response->fault_line if $response->is_fault;
+
+Access result elements by using the key as the method name.  In list context,
+dereferencing takes place automagically, saving you a few characters:
+
+  my @songs = $response->songs;
+
+But after this first "layer" you're stuck dealing with hashrefs, as in the
+L</"SYNOPSIS"> (though perhaps this will change in the future if I'm up to it):
+
+  for(@songs) {
+      printf("%s", $_->{songName});
+      printf(" by %s", $_->{artistName});
+      printf(" on %s\n", $_->{albumName});
+      printf(" <%s>\n", $_->{liteUrl});
+  }
+
+Check the official API documentation for valid keys. Alternatively, experiment!
+
+  use Data::Dumper;
+  print Dumper($response);
+
+This module's interface aims to parallel the official API as much as possible.
+Consequently, all methods take argument names identical to the official ones.
+However, some methods are "overloaded."  For example,
+C<session_createUserAuthToken> gives you the option of passing a plaintext
+C<pass> rather than a C<hashpass>, handling C<hashpass> generation for you.
+
+Some methods may also have side effects.  These are generally "harmless": for
+example, successful C<session_create> and C<session_get> calls store the
+returned session ID so that it can be passed in the header of subsequent API
+calls.
+
+Alternate method arguments and any side effects are listed where applicable.
+
 =head2 ALBUM
 
 =over 4
 
-=item $gs->album_about( )
+=item $gs->album_about( albumID => $ALBUM_ID )
+
+Returns meta-information for the album with the specified $ALBUM_ID, such as
+album name, artist ID, and artist name.
 
 =cut
 
@@ -145,7 +238,10 @@ sub album_about {
 	return $ret;
 }
 
-=item $gs->album_getSongs( )
+=item $gs->album_getSongs( albumID => $ALBUM_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Returns all the songs on the album with the specified $ALBUM_ID, as well as
+song meta-information.
 
 =cut
 
@@ -161,7 +257,9 @@ sub album_getSongs {
 
 =over 4
 
-=item $gs->artist_about( )
+=item $gs->artist_about( artistID => $ARTIST_ID )
+
+Returns information for the artist with the specified $ARTIST_ID.
 
 =cut
 
@@ -171,7 +269,10 @@ sub artist_about {
 	return $ret;
 }
 
-=item $gs->artist_getAlbums( )
+=item $gs->artist_getAlbums( artistID => $ARTIST_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Returns the albums of the artist with the specified $RTIST_ID, as well as
+album meta-information.
 
 =cut
 
@@ -181,7 +282,9 @@ sub artist_getAlbums {
 	return $ret;
 }
 
-=item $gs->artist_getSimilar( )
+=item $gs->artist_getSimilar( artistID => $ARTIST_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Returns a list of artists similar to the one with the specified $ARTIST_ID.
 
 =cut
 
@@ -191,7 +294,10 @@ sub artist_getSimilar {
 	return $ret;
 }
 
-=item $gs->artist_getSongs( )
+=item $gs->artist_getSongs( artistID => $ARTIST_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Returns the songs on the albums of the artist with the specified $ARTIST_ID, as
+well as song meta-information.
 
 =cut
 
@@ -201,13 +307,32 @@ sub artist_getSongs {
 	return $ret;
 }
 
+=item $gs->artist_getTopRatedSongs( artistID => $ARTIST_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Returns the top rated songs of the artist with the specified $ARTIST_ID, as
+well as song meta-information.  Use at your own risk: the existence of this
+method was not mentioned in the official API documentation at the time of
+this writing; it was discovered through the sandbox tool.
+
+=cut
+
+sub artist_getTopRatedSongs {
+	my($self, %args) = @_;
+	my $ret = $self->_call('artist.getTopRatedSongs', %args);
+	return $ret;
+}
+
 =back
 
 =head2 AUTOPLAY
 
 =over 4
 
-=item $gs->autoplay_frown( )
+=item $gs->autoplay_frown( autoplaySongID => $AUTOPLAY_SONG_ID )
+
+"Frowns" the song with the specified $AUTOPLAY_SONG_ID in the current Autoplay
+session, indicating that the song is not liked and making the Autoplay session
+suggest fewer songs like it.
 
 =cut
 
@@ -219,6 +344,9 @@ sub autoplay_frown {
 
 =item $gs->autoplay_getNextSong( )
 
+Returns the next suggested song in the current Autoplay session, based on the
+seed songs and any "smiles" or "frowns."
+
 =cut
 
 sub autoplay_getNextSong {
@@ -227,7 +355,11 @@ sub autoplay_getNextSong {
 	return $ret;
 }
 
-=item $gs->autoplay_smile( )
+=item $gs->autoplay_smile( autoplaySongID => $AUTOPLAY_SONG_ID )
+
+"Smiles" the song with the specified $AUTOPLAY_SONG_ID in the current Autoplay
+session, indicating that the song is liked and making the Autoplay session
+suggest more songs like it.
 
 =cut
 
@@ -237,7 +369,10 @@ sub autoplay_smile {
 	return $ret;
 }
 
-=item $gs->autoplay_start( )
+=item $gs->autoplay_start( songIDs => \@SONG_IDS )
+
+Starts an Autoplay session seeded with the specified song IDs and returns the
+first song suggestion.
 
 =cut
 
@@ -248,6 +383,8 @@ sub autoplay_start {
 }
 
 =item $gs->autoplay_stop( )
+
+Ends the active Autoplay session.
 
 =cut
 
@@ -263,7 +400,10 @@ sub autoplay_stop {
 
 =over 4
 
-=item $gs->playlist_about( )
+=item $gs->playlist_about( playlistID => $PLAYLIST_ID )
+
+Returns information for the playlist with the specified $PLAYLIST_ID, such as
+its name, description, song count, creation date, etc.
 
 =cut
 
@@ -273,7 +413,13 @@ sub playlist_about {
 	return $ret;
 }
 
-=item $gs->playlist_addSong( )
+=item $gs->playlist_addSong( playlistID => $PLAYLIST_ID , songID => $SONG_ID [, position => $POSITION ] )
+
+Adds the song with the specified $SONG_ID to the playlist with the specified
+$PLAYLIST_ID at $POSITION (or at the end, if $POSITION is omitted).  Valid
+positions start from 1: a value of zero is equivalent to not specifying any.
+To succeed, this method requires being authenticated as the playlist's
+creator.
 
 =cut
 
@@ -283,7 +429,10 @@ sub playlist_addSong {
 	return $ret;
 }
 
-=item $gs->playlist_create( )
+=item $gs->playlist_create( name => $NAME, about => $DESCRIPTION )
+
+Creates a playlist with the specified $NAME and $DESCRIPTION and returns the
+playlist ID.  Requires user authentication.
 
 =cut
 
@@ -293,7 +442,11 @@ sub playlist_create {
 	return $ret;
 }
 
-=item $gs->playlist_delete( )
+=item $gs->playlist_delete( playlistID => $PLAYLIST_ID )
+
+Deletes the playlist with the specified $PLAYLIST_ID.  Requires being
+authenticated as the playlist's creator.  (But at the time of this writing,
+this didn't seem to work as expected due to a possible server-side bug.)
 
 =cut
 
@@ -303,7 +456,10 @@ sub playlist_delete {
 	return $ret;
 }
 
-=item $gs->playlist_getSongs( )
+=item $gs->playlist_getSongs( playlistID => $PLAYLIST_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Returns the songs on the playlist with the specified $PLAYLIST_ID, as well as
+song meta-information.
 
 =cut
 
@@ -313,7 +469,12 @@ sub playlist_getSongs {
 	return $ret;
 }
 
-=item $gs->playlist_moveSong( )
+=item $gs->playlist_moveSong( playlistID => $PLAYLIST_ID , position => $POSITION , newPosition => $NEW_POSITION )
+
+Moves the song at $POSITION in the playlist with the specified $PLAYLIST_ID to
+$NEW_POSITION.  Valid positions start from 1.  A $NEW_POSITION of zero moves
+the song to the end of the playlist.  To succeed, this method requires being
+authenticated as the playlist's creator.
 
 =cut
 
@@ -323,7 +484,11 @@ sub playlist_moveSong {
 	return $ret;
 }
 
-=item $gs->playlist_removeSong( )
+=item $gs->playlist_removeSong( playlistID => $PLAYLIST_ID , position => $POSITION )
+
+Removes the song at $POSITION from the playlist with the specified
+$PLAYLIST_ID.  Valid positions start from 1.  To succeed, this method requires
+being authenticated as the playlist's creator.
 
 =cut
 
@@ -333,7 +498,11 @@ sub playlist_removeSong {
 	return $ret;
 }
 
-=item $gs->playlist_rename( )
+=item $gs->playlist_rename( playlistID => $PLAYLIST_ID , name => $NAME )
+
+Renames the playlist with the specified $PLAYLIST_ID to $NAME.  Requires being
+authenticated as the playlist's creator.  (But at the time of this writing,
+this didn't seem to work as expected due to a possible server-side bug.)
 
 =cut
 
@@ -343,7 +512,13 @@ sub playlist_rename {
 	return $ret;
 }
 
-=item $gs->playlist_replace( )
+=item $gs->playlist_replace( playlistID => $PLAYLIST_ID , songIDs = \@SONG_IDS )
+
+Replaces the contents of the playlist with the specified $PLAYLIST_ID with the
+songs corresponding to the given @SONG_IDS, in the specified order. To succeed,
+this method requires being authenticated as the playlist's creator.  (But at
+the time of this writing, this didn't seem to work as expected, instead
+returning an internal server error message.)
 
 =cut
 
@@ -359,7 +534,10 @@ sub playlist_replace {
 
 =over 4
 
-=item $gs->popular_getAlbums( )
+=item $gs->popular_getAlbums( [ limit => $LIMIT ] [, page => $PAGE ] )
+
+Gets a list of popular albums (and meta-information) from Grooveshark's
+billboard.
 
 =cut
 
@@ -369,7 +547,9 @@ sub popular_getAlbums {
 	return $ret;
 }
 
-=item $gs->popular_getArtists( )
+=item $gs->popular_getArtists( [ limit => $LIMIT ] [, page => $PAGE ] )
+
+Gets a list of popular artists from Grooveshark's billboard.
 
 =cut
 
@@ -379,7 +559,10 @@ sub popular_getArtists {
 	return $ret;
 }
 
-=item $gs->popular_getSongs( )
+=item $gs->popular_getSongs( [ limit => $LIMIT ] [, page => $PAGE ] )
+
+Gets a list of popular songs (and meta-information) from Grooveshark's
+billboard.
 
 =cut
 
@@ -395,7 +578,9 @@ sub popular_getSongs {
 
 =over 4
 
-=item $gs->search_albums( )
+=item $gs->search_albums( query => $QUERY [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Searches for albums with names that match $QUERY.
 
 =cut
 
@@ -405,7 +590,9 @@ sub search_albums {
 	return $ret;
 }
 
-=item $gs->search_artists( )
+=item $gs->search_artists( query => $QUERY [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Searches for artists with names that match $QUERY.
 
 =cut
 
@@ -415,7 +602,10 @@ sub search_artists {
 	return $ret;
 }
 
-=item $gs->search_playlists( )
+=item $gs->search_playlists( query => $QUERY [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Searches for playlists that match $QUERY by name or by meta-information
+of composing songs.
 
 =cut
 
@@ -425,7 +615,9 @@ sub search_playlists {
 	return $ret;
 }
 
-=item $gs->search_songs( )
+=item $gs->search_songs( query => $QUERY [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Searches for songs that match $QUERY by name or meta-information.
 
 =cut
 
@@ -443,6 +635,10 @@ sub search_songs {
 
 =item $gs->service_ping( )
 
+Checks that the service is alive.  Seems to be the only method that doesn't
+require a session.  Useful for testing (and for getting a "Hello, world"
+greeting in some language).
+
 =cut
 
 sub service_ping {
@@ -457,7 +653,16 @@ sub service_ping {
 
 =over 4
 
-=item $gs->session_createUserAuthToken( )
+=item $gs->session_createUserAuthToken( username => $USERNAME , pass => $PASS | hashpass => $HASHPASS )
+
+Creates an authentication token for the specified $USERNAME.  Authentication
+requires a $HASHPASS, which is a hexadecimal MD5 hash of the concatenation of
+$USERNAME and a hexadecimal MD5 hash of $PASS.  If you're storing the password 
+as plaintext, don't bother generating the $HASHPASS yourself: just omit the
+$HASHPASS and give C<pass =E<gt> $PASS> to this method.  If you specify both a
+$HASHPASS and a $PASS, the $HASHPASS will take precedence (but don't try it).
+Regardless, the $PASS will be removed from the arguments that are passed during
+the API call.
 
 =cut
 
@@ -471,11 +676,11 @@ sub session_createUserAuthToken {
 	else {
 		if(exists($args{username}) && exists($args{pass})) {
 			$args{hashpass} = md5_hex($args{username}, md5_hex($args{pass}));
-			delete $args{pass};
 		}
 		else {
 			carp 'Need username and pass to create authentication token';
 		}
+		delete $args{pass};
 	}
 	
 	my $ret = $self->_call('session.createUserAuthToken', %args);		
@@ -483,6 +688,10 @@ sub session_createUserAuthToken {
 }
 
 =item $gs->session_destroy( )
+
+Destroys the currently active session.  As a side effect, removes the stored
+session ID so that subsequent C<sessionID> calls on this C<WWW::Grooveshark>
+object will return C<undef>.
 
 =cut
 
@@ -496,7 +705,10 @@ sub session_destroy {
 	return $ret;
 }
 
-=item $gs->session_destroyAuthToken( )
+=item $gs->session_destroyAuthToken( token => $TOKEN )
+
+Destroys an auth token so that subsequent attempts to use it to login will
+fail.
 
 =cut
 
@@ -507,6 +719,13 @@ sub session_destroyAuthToken {
 }
 
 =item $gs->session_get( )
+
+Gets the session ID of the currently active session.  Presumably this updates
+every once in a while because there wouldn't be much use in this method
+otherwise: an active session is required to call it, and returning the same
+session ID would be a waste of an API call...  Assuming this does update,
+calling this method has the side effect of updating the session ID of this
+C<WWW::Grooveshark> object.
 
 =cut
 
@@ -522,6 +741,8 @@ sub session_get {
 
 =item $gs->session_getUserID( )
 
+Gets the user ID of the currently logged-in user.
+
 =cut
 
 sub session_getUserID {
@@ -530,7 +751,9 @@ sub session_getUserID {
 	return $ret;
 }
 
-=item $gs->session_loginViaAuthToken( )
+=item $gs->session_loginViaAuthToken( token => $TOKEN )
+
+Logs in using a $TOKEN created using C<session_createUserAuthToken>.
 
 =cut
 
@@ -542,6 +765,8 @@ sub session_loginViaAuthToken {
 
 =item $gs->session_logout( )
 
+Logs out the logged-in user.
+
 =cut
 
 sub session_logout {
@@ -550,7 +775,14 @@ sub session_logout {
 	return $ret;
 }
 
-=item $gs->session_start( )
+=item $gs->session_start( apiKey => $API_KEY [, mobileID => $MOBILE_ID ] )
+
+Starts a session using the specified $API_KEY.  This method must be called
+before using (nearly) all of the other methods.  The returned session ID will
+be stored in this C<WWW::Grooveshark> object, accessible via calls to
+C<sessionID>, and automatically placed in the header of subsequent API calls.
+$MOBILE_ID isn't mentioned in the official documentation and appears only in
+the sandbox tool.
 
 =cut
 
@@ -581,7 +813,10 @@ sub session_start {
 
 =over 4
 
-=item $gs->song_about( )
+=item $gs->song_about( songID => $SONG_ID )
+
+Returns meta-information for the song with the specified $SONG_ID, such as
+song name, album name, album ID, artist name, artist ID, etc.
 
 =cut
 
@@ -591,7 +826,10 @@ sub song_about {
 	return $ret;
 }
 
-=item $gs->song_favorite( )
+=item $gs->song_favorite( songID => $SONG_ID )
+
+Marks the song with the specified $SONG_ID as a favorite.  Requires user
+authentication.
 
 =cut
 
@@ -601,7 +839,10 @@ sub song_favorite {
 	return $ret;
 }
 
-=item $gs->song_getSimilar( )
+=item $gs->song_getSimilar( songID => $SONG_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Gets a list of songs similar to the one with the specified $SONG_ID, as well as
+their meta-information.
 
 =cut
 
@@ -611,7 +852,10 @@ sub song_getSimilar {
 	return $ret;
 }
 
-=item $gs->song_getStreamKey( )
+=item $gs->song_getStreamKey( songID => $SONG_ID )
+
+Gets a streamKey for the song with the specified $SONG_ID (needed to authorize
+playback for some Grooveshark embeddable players).
 
 =cut
 
@@ -621,7 +865,11 @@ sub song_getStreamKey {
 	return $ret;
 }
 
-=item $gs->song_getStreamUrl( )
+=item $gs->song_getStreamUrl( songID => $SONG_ID )
+
+Gets an URL for streaming playback of the song with the specified $SONG_ID.
+According to the response header, this method is deprecated and 
+C<song_getStreamUrlEx> should be used instead.
 
 =cut
 
@@ -631,7 +879,13 @@ sub song_getStreamUrl {
 	return $ret;
 }
 
-=item $gs->song_getStreamUrlEx( )
+=item $gs->song_getStreamUrlEx( songID => $SONG_ID [, lowBitrate => $LOW_BITRATE ] )
+
+The supposedly preferred alternative to C<song_getStreamUrlEx>.  Use at your
+own risk: the existence of this method was not mentioned in the official API
+documentation at the time of this writing; it was discovered through the
+sandbox tool as well as the deprecation message in the header of
+C<song_getStreamUrl> responses.
 
 =cut
 
@@ -641,7 +895,13 @@ sub song_getStreamUrlEx {
 	return $ret;
 }
 
-=item $gs->song_getWidgetEmbedCode( )
+=item $gs->song_getWidgetEmbedCode( songID => $SONG_ID [, theme => $THEME ] [, pxHeight => $HEIGHT ] [, pxWidth => $WIDTH ] [, ap => $AP ] )
+
+Gets HTML code for embedding the song with the specified $SONG_ID.  The code
+may be customized by specifying a pixel $HEIGHT and $WIDTH as well as a theme
+for the widget, which must be in C<qw(metal grass wood water)>.  The $AP is
+optional and appears only in the sandbox tool and not the official
+documentation: its meaning is unknown.
 
 =cut
 
@@ -651,7 +911,11 @@ sub song_getWidgetEmbedCode {
 	return $ret;
 }
 
-=item $gs->song_getWidgetEmbedCodeFbml( )
+=item $gs->song_getWidgetEmbedCodeFbml( songID => $SONG_ID [, theme => $THEME ] [, pxHeight => $HEIGHT ] [, pxWidth => $WIDTH ] [, ap => $AP ]
+
+This is in fact not an API method but a wrapper for C<song_getWidgetEmbedCode>
+that modifies the returned HTML code to FBML so it can be used in Facebook
+applications.  This method is experimental: use it at your own risk.
 
 =cut
 
@@ -668,7 +932,10 @@ sub song_getWidgetEmbedCodeFbml {
 	return $ret;
 }
 
-=item $gs->song_unfavorite( )
+=item $gs->song_unfavorite( songID => $SONG_ID )
+
+Removes the song with the specified $SONG_ID from the logged-in user's list
+of favorites.
 
 =cut
 
@@ -684,7 +951,10 @@ sub song_unfavorite {
 
 =over 4
 
-=item $gs->user_getFavoriteSongs( )
+=item $gs->user_getFavoriteSongs( $user_id => $USER_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Returns songs (and meta-information) from the favorite list of the user with
+the specified $USER_ID.
 
 =cut
 
@@ -694,7 +964,9 @@ sub user_getFavoriteSongs {
 	return $ret;
 }
 
-=item $gs->user_getPlaylists( )
+=item $gs->user_getPlaylists( $user_id => $USER_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+
+Gets the playlists created by the user with the specified $USER_ID.
 
 =cut
 
@@ -751,7 +1023,7 @@ __END__
 
 =head1 SEE ALSO
 
-L<http://grooveshark.com/>, L<WWW::Grooveshark::Response>, L<WWW::TinySong>
+L<http://www.grooveshark.com/>, L<WWW::Grooveshark::Response>, L<WWW::TinySong>
 
 =head1 BUGS
 
@@ -760,14 +1032,7 @@ L<http://elementsofpuzzle.googlecode.com/> or drop me an e-mail.
 
 =head1 AUTHOR
 
-Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
-
-=head1 VERSION
-
-This document describes C<WWW::Grooveshark> version 0.00_01 (July 4, 2009).
-
-The latest version is hosted on Google Code as part of
-L<http://elementsofpuzzle.googlecode.com/>.
+Miorel-Lucian Palii E<lt>mlpalii@gmail.comE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -775,6 +1040,7 @@ Copyright (C) 2009 by Miorel-Lucian Palii
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
-at your option, any later version of Perl 5 you may have available.
+at your option, any later version of Perl 5 you may have available.  See
+L<perlartistic>.
 
 =cut

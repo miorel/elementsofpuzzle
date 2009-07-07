@@ -1,8 +1,26 @@
 package WWW::Grooveshark::Response;
 
+use 5.006;
+use strict;
+use warnings;
+
 =head1 NAME
 
 WWW::Grooveshark::Response - Grooveshark API response message
+
+=head1 VERSION
+
+This document describes C<WWW::Grooveshark::Response> version 0.01_01
+(July 7, 2009).
+
+This module is distributed with L<WWW::Grooveshark> and therefore takes its
+version from that module.  The latest version of both components is hosted on
+Google Code as part of <http://elementsofpuzzle.googlecode.com/>.
+
+=cut
+
+our $VERSION = '0.01_01';
+$VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
@@ -10,7 +28,7 @@ Response objects are returned by the API methods of L<WWW::Grooveshark>:
 
   # some code to prepare $gs
   
-  my $response = $gs->search_songs(query => 'The Beatles');
+  my $response = $gs->search_songs(query => "The Beatles");
   
   if($response->is_fault) {
       print STDERR $response->fault_line;
@@ -33,10 +51,6 @@ if you're too lazy or stubborn to familiarize yourself with this interface,
 you may access the data structure directly like any hashref.
 
 =cut
-
-use 5.006;
-use strict;
-use warnings;
 
 use Carp;
 use Exporter;
@@ -74,9 +88,6 @@ while(my($key, $val) = each %fault) {
 our @ISA         = qw(Exporter);
 our %EXPORT_TAGS = (fault => [keys %fault]);
 our @EXPORT_OK   = @{$EXPORT_TAGS{fault}};
-
-our $VERSION = '0.00_01';
-$VERSION = eval $VERSION;
 
 our $AUTOLOAD;
 
@@ -352,16 +363,7 @@ L<http://elementsofpuzzle.googlecode.com/> or drop me an e-mail.
 
 =head1 AUTHOR
 
-Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
-
-=head1 VERSION
-
-This document describes C<WWW::Grooveshark::Response> version 0.00_01
-(July 4, 2009).
-
-This module is distributed with L<WWW::Grooveshark> and therefore takes its
-version from that module.  The latest version of both components is hosted on
-Google Code as part of <http://elementsofpuzzle.googlecode.com/>.
+Miorel-Lucian Palii E<lt>mlpalii@gmail.comE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -369,6 +371,7 @@ Copyright (C) 2009 by Miorel-Lucian Palii
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
-at your option, any later version of Perl 5 you may have available.
+at your option, any later version of Perl 5 you may have available.  See
+L<perlartistic>.
 
 =cut

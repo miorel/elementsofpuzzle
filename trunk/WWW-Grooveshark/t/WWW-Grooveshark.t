@@ -1,4 +1,4 @@
-use Test::More tests => 69;
+use Test::More tests => 71;
 
 my $config_file;
 BEGIN {
@@ -31,22 +31,22 @@ SKIP: {
 
     my $conn_ok;
     eval 'use Net::Config qw(%NetConfig); $conn_ok = $NetConfig{test_hosts}';
-    skip 'Net::Config needed for network-related tests', 65 if $@;
-    skip 'No network connection', 65 unless $conn_ok;
+    skip 'Net::Config needed for network-related tests', 67 if $@;
+    skip 'No network connection', 67 unless $conn_ok;
 
 	my $r;
 
 	# test sessionless service_ping()
 	ok($gs->service_ping, 'sessionless service_ping() returns true value');
 
-	diag_skip('API key not defined, skipping remaining tests', 64)
+	diag_skip('API key not defined, skipping remaining tests', 66)
 		unless defined $api_key;
 
 	# test session_start()
 	ok($r = $gs->session_start(apiKey => $api_key),
 		'session_start() returns true value');
 
-	diag_skip('Problem starting session: ' . $r->fault_line, 63)
+	diag_skip('Problem starting session: ' . $r->fault_line, 65)
 		if $r->is_fault;
 
 	# test service_ping()
@@ -114,6 +114,12 @@ SKIP: {
 	ok($gs->artist_getSimilar(artistID => $artist_id, limit => 1)->artists,
 		'artist_getSimilar() returns expected structure');
 
+	# test artist_getTopRatedSongs()
+	ok($r = $gs->artist_getTopRatedSongs(artistID => $artist_id,
+		limit => 1), 'artist_getTopRatedSongs() returns true value');
+	is(($r->songs)[0]->{artistID}, $artist_id,
+		'artist_getTopRatedSongs() returns expected value');
+
 	# test search_playlists()
 	$r = $gs->search_playlists(%search);
 	ok($r->playlists, 'search_playlists() returns expected structure');
@@ -134,7 +140,7 @@ SKIP: {
 		'search_songs() returns expected structure');
 
 	# test popular_getSongs()
-	$r = $gs->popular_getSongs(limit => 3);
+	$r = $gs->popular_getSongs(limit => 10);
 	ok($r->songs, 'popular_getSongs() returns expected structure');
 	@song_ids = map {$_->{songID}} $r->songs;
 	$song_id = ($r->songs)[0]->{songID};
@@ -180,12 +186,12 @@ SKIP: {
 	
 	# test autoplay_smile()
 	ok(!$gs->autoplay_smile(autoplaySongID => $ap_song_id)->is_fault,
-		'autoplay_smile() works as expected');
+			'autoplay_smile() works as expected');
 
 	# test autoplay_getNextSong()
 	ok($ap_song_id = $gs->autoplay_getNextSong->autoplaySongID,
 		'autoplay_getNextSong() returns expected structure');
-		
+	
 	# test autoplay_frown()
 	ok(!$gs->autoplay_frown(autoplaySongID => $ap_song_id)->is_fault,
 		'autoplay_frown() works as expected');
@@ -278,7 +284,7 @@ SKIP: {
 		
 		$remark = 'Thre may be a server-side error in ' .
 			'playlist replacing'
-			. ' through the API';
+			. ' through the API.';
 		diag($remark);
 		TODO: {
 			local $TODO = $remark;

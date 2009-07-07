@@ -1,4 +1,4 @@
-package Some::Module;
+package Facebook::Minstrel;
 
 =head1 NAME
 
@@ -60,15 +60,12 @@ __END__
 
 =head1 SEE ALSO
 
-L<http://www.google.com/>, L<Some::Other::Module>
+L<http://www.google.com/>, L<WWW::Facebook::API>
 
 =head1 BUGS
 
-Please report them!  The preferred way to submit a bug report for this module
-is through CPAN's bug tracker:
-L<http://rt.cpan.org/Public/Dist/Display.html?Name=Some-Module>.  You may
-also create an issue at L<http://elementsofpuzzle.googlecode.com/> or drop
-me an e-mail.
+Please report them!  Create an issue at
+L<http://elementsofpuzzle.googlecode.com/> or drop me an e-mail.
 
 =head1 AUTHOR
 
@@ -76,7 +73,7 @@ Miorel-Lucian Palii, E<lt>mlpalii@gmail.comE<gt>
 
 =head1 VERSION
 
-This document describes "Some::Module" version 0.01 (July 6, 2009).
+This document describes "Facebook::Minstrel" version 0.01 (July 6, 2009).
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
