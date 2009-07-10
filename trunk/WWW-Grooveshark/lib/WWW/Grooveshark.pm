@@ -10,10 +10,11 @@ WWW::Grooveshark - Perl wrapper for the Grooveshark API
 
 =head1 VERSION
 
-This document describes C<WWW::Grooveshark> version 0.01_01 (July 7, 2009).
+This document describes C<WWW::Grooveshark> version 0.01_01 (July 10, 2009).
 
 The latest version is hosted on Google Code as part of
-L<http://elementsofpuzzle.googlecode.com/>.
+L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
+contributed to CPAN: http://search.cpan.org/dist/WWW-Grooveshark/.
 
 =cut
 
@@ -22,14 +23,14 @@ $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
-Basic use is demonstrated here.  See L</"API METHODS"> for details.
+Basic use is demonstrated here.  See L</API METHODS> for details.
 
   use WWW::Grooveshark;
 
   my $gs = WWW::Grooveshark->new(https => 1, agent => "my-nice-robot/0.1");
 
-  my $r = $gs->session_start(apiKey => $secret);
-  die $r->fault_line if $r->is_fault;
+  my $r;
+  $r = $gs->session_start(apiKey => $secret) or die $r->fault_line;
   
   for($gs->search_songs(query => "The Beatles", limit => 10)->songs) {
       printf("%s", $_->{songName});
@@ -38,7 +39,7 @@ Basic use is demonstrated here.  See L</"API METHODS"> for details.
       printf(" <%s>\n", $_->{liteUrl});
   }
   
-  $gs->session_destroy;
+  # session automatically ended by destructor
 
 =head1 DESCRIPTION
 
@@ -59,6 +60,7 @@ you to the official API page, which seems to still be in beta.
 use Carp;
 use Digest::MD5 qw(md5_hex);
 use JSON::Any;
+use URI::Escape;
 
 use WWW::Grooveshark::Response qw(:fault);
 
@@ -74,15 +76,21 @@ possible through key-value options.
 
 =item WWW::Grooveshark->new( %OPTIONS )
 
-Prepares a new L<WWW::Grooveshark> object with the specified options, which are
+Prepares a new C<WWW::Grooveshark> object with the specified options, which are
 passed in as key-value pairs, as in a hash.  Accepted options are:
 
 =over 4
 
+=item I<https>
+
+Whether or not to use HTTPS for API calls.  Defaults to false, i.e. just use
+HTTP.
+
 =item I<service>
 
 The hostname to use for the Grooveshark API service.  Defaults to
-"api.grooveshark.com".
+"api.grooveshark.com" unless C<staging> is true, in which case it defaults to
+"staging.api.grooveshark.com".
 
 =item I<path>
 
@@ -92,10 +100,11 @@ Path (relative to the hostname) to request for API calls.  Defaults to "ws".
 
 Version of the Grooveshark API you plan on using.  Defaults to 1.0.
 
-=item I<https>
+=item I<query_string>
 
-Whether or not to use HTTPS for API calls.  Defaults to false, i.e. just use
-HTTP.
+The query string to include in API call requests.  May be blank.  Defaults to
+"json" so that the full default API root URL becomes
+E<lt>http://api.grooveshark.com/ws/1.0/?jsonE<gt>.
 
 =item I<agent>
 
@@ -137,18 +146,40 @@ sub new {
 	croak $@ if $@;
 	my $ua = $ua_class->new(%$ua_args);
 
+	my $default_service = $opts{staging} ?
+	                      'staging.api.grooveshark.com' :
+		                  'api.grooveshark.com';
+
 	return bless({
-		_ua          => $ua,
-		_service     => $opts{service}     || 'api.grooveshark.com',
-		_path        => $opts{path}        || 'ws',
-		_api_version => $opts{api_version} || '1.0',
-		_https       => $opts{https}       || '0',
-		_session_id  => undef,
-		_json        => new JSON::Any,
+		_ua           => $ua,
+		_service      => $opts{service}      || $default_service,
+		_path         => $opts{path}         || 'ws',
+		_api_version  => $opts{api_version}  || '1.0',
+		_query_string => $opts{query_string} || 'json',
+		_https        => $opts{https}        || 0,
+		_session_id   => undef,
+		_json         => new JSON::Any,
 	}, $pkg);
 }
 
 =back
+
+=head1 DESTRUCTOR
+
+I like code that cleans up after itself.  If a program starts by creating a
+session, it's only logical that it should finish by ending it.  But should it
+be up to the programmer to manage when that happens?  Anyone can be forgetful.
+
+Enter the destructor.  Continue explicitly cleaning up, but if you forget to
+do so, the destructor has your back.  When a C<WWW::Grooveshark> object gets
+garbage collected, it will destroy its session if any.
+
+=cut
+
+sub DESTROY {
+	my $self = shift;
+	$self->session_destroy if $self->sessionID;	
+}
 
 =head1 MANAGEMENT METHODS
 
@@ -176,10 +207,10 @@ sub sessionID {
 
 The methods listed here directly wrap the methods of Groveshark's JSON-RPC
 API.  As you may have noticed, there is a very complex mapping between the
-API's official methods and those of this interface: simply replace the
-period ('.') with an underscore ('_').  As with the constructor, pass
-arguments as hash-like key-value pairs, so for example, to get the 11th through
-20th most popular songs, I would:
+API's official methods and those of this interface: replace the period ('.')
+with an underscore ('_').  As with the constructor, pass arguments as
+hash-like key-value pairs, so for example, to get the 11th through 20th most
+popular songs, I would:
 
   my $response = $gs->popular_getSongs(limit => 10, page => 2);
 
@@ -194,7 +225,7 @@ dereferencing takes place automagically, saving you a few characters:
   my @songs = $response->songs;
 
 But after this first "layer" you're stuck dealing with hashrefs, as in the
-L</"SYNOPSIS"> (though perhaps this will change in the future if I'm up to it):
+L</SYNOPSIS> (though perhaps this will change in the future if I'm up to it):
 
   for(@songs) {
       printf("%s", $_->{songName});
@@ -985,15 +1016,23 @@ sub user_getPlaylists {
 sub _call {
 	my($self, $method, %param) = @_;
 
+#	print STDERR "Called $method\n";
+
 	my $req = {
 		header     => {sessionID => $self->sessionID},
 		method     => $method,
 		parameters => \%param,
 	};
 
+#	use Data::Dumper; print STDERR Dumper($req);
+
 	my $json = $self->{_json}->encode($req);
-	my $url = sprintf("%s://%s/%s/%s/", ($self->{_https} ? 'https' : 'http'),
+	my $url = sprintf('%s://%s/%s/%s/', ($self->{_https} ? 'https' : 'http'),
 		map($self->{$_}, qw(_service _path _api_version)));
+	if(my $q = $self->{_query_string}) {
+		$q = uri_escape($q);
+		$url .= '?' . $q;
+	}
 	my $response = $self->{_ua}->post($url,
 		'Content-Type' => 'text/json',
 		'Content'      => $json,
@@ -1014,6 +1053,8 @@ sub _call {
     	};
 	}
 
+#	use Data::Dumper; print STDERR Dumper($ret);
+
 	return WWW::Grooveshark::Response->new($ret);
 }
 
@@ -1027,8 +1068,11 @@ L<http://www.grooveshark.com/>, L<WWW::Grooveshark::Response>, L<WWW::TinySong>
 
 =head1 BUGS
 
-Please report them!  Create an issue at
-L<http://elementsofpuzzle.googlecode.com/> or drop me an e-mail.
+Please report them!  The preferred way to submit a bug report for this module
+is through CPAN's bug tracker:
+http://rt.cpan.org/Public/Dist/Display.html?Name=WWW-Grooveshark.  You may
+also create an issue at http://elementsofpuzzle.googlecode.com/ or drop me an
+e-mail.
 
 =head1 AUTHOR
 

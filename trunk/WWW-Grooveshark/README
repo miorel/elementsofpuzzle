@@ -42,6 +42,7 @@ This module requires the following other modules:
   JSON::Any
   LWP::UserAgent
   NEXT (at least version 0.61)
+  URI::Escape
 
 CONTACT
 
