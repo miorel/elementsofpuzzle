@@ -10,7 +10,7 @@ WWW::Grooveshark - Perl wrapper for the Grooveshark API
 
 =head1 VERSION
 
-This document describes C<WWW::Grooveshark> version 0.01_01 (July 10, 2009).
+This document describes C<WWW::Grooveshark> version 0.01_01 (July 19, 2009).
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
@@ -215,9 +215,10 @@ popular songs, I would:
   my $response = $gs->popular_getSongs(limit => 10, page => 2);
 
 All API methods return L<WWW::Grooveshark::Response> objects, even in case of
-errors.  Make a habit of checking that method calls were successful:
+errors, but their boolean evaluation is L<overload>ed to give false for fault
+responses.  Make a habit of checking that method calls were successful:
 
-  die $response->fault_line if $response->is_fault;
+  die $response->fault_line unless $response;
 
 Access result elements by using the key as the method name.  In list context,
 dereferencing takes place automagically, saving you a few characters:
@@ -302,7 +303,7 @@ sub artist_about {
 
 =item $gs->artist_getAlbums( artistID => $ARTIST_ID [, limit => $LIMIT ] [, page => $PAGE ] )
 
-Returns the albums of the artist with the specified $RTIST_ID, as well as
+Returns the albums of the artist with the specified $ARTIST_ID, as well as
 album meta-information.
 
 =cut
@@ -476,8 +477,7 @@ sub playlist_create {
 =item $gs->playlist_delete( playlistID => $PLAYLIST_ID )
 
 Deletes the playlist with the specified $PLAYLIST_ID.  Requires being
-authenticated as the playlist's creator.  (But at the time of this writing,
-this didn't seem to work as expected due to a possible server-side bug.)
+authenticated as the playlist's creator.
 
 =cut
 
@@ -532,8 +532,7 @@ sub playlist_removeSong {
 =item $gs->playlist_rename( playlistID => $PLAYLIST_ID , name => $NAME )
 
 Renames the playlist with the specified $PLAYLIST_ID to $NAME.  Requires being
-authenticated as the playlist's creator.  (But at the time of this writing,
-this didn't seem to work as expected due to a possible server-side bug.)
+authenticated as the playlist's creator.
 
 =cut
 
@@ -664,11 +663,37 @@ sub search_songs {
 
 =over 4
 
+=item $gs->service_getMethods( )
+
+Gets a list of the methods supported by the service, as well as the names of
+their parameters.  Calling this method doesn't require a session.
+
+=cut
+
+sub service_getMethods {
+	my($self, %args) = @_;
+	my $ret = $self->_call('service.getMethods', %args);
+	return $ret;
+}
+
+=item $gs->service_getVersion( )
+
+Gets the version of the API supported by the service.  Calling this method
+doesn't require a session.
+
+=cut
+
+sub service_getVersion {
+	my($self, %args) = @_;
+	my $ret = $self->_call('service.getVersion', %args);
+	return $ret;
+}
+
 =item $gs->service_ping( )
 
-Checks that the service is alive.  Seems to be the only method that doesn't
-require a session.  Useful for testing (and for getting a "Hello, world"
-greeting in some language).
+Checks that the service is alive.  Calling this method doesn't require a
+session.  Useful for testing (and for getting a "Hello, world" greeting in
+some language).
 
 =cut
 
@@ -731,7 +756,7 @@ sub session_destroy {
 	my $ret = $self->_call('session.destroy', %args);
 	
 	# kill the stored session ID if destroying was successful
-	$self->{_session_id} = undef unless $ret->is_fault;
+	$self->{_session_id} = undef if $ret;
 		
 	return $ret;
 }
@@ -765,7 +790,7 @@ sub session_get {
 	my $ret = $self->_call('session.get', %args);
 	
 	# save the session ID given in the response
-	$self->{_session_id} = $ret->sessionID unless $ret->is_fault;
+	$self->{_session_id} = $ret->sessionID if $ret;
 	
 	return $ret;
 }
@@ -826,13 +851,13 @@ sub session_start {
 	
 	my $ret = $self->_call('session.start', %args);
 	
-	if($ret->is_fault) {
-		# restore old session ID
-		$self->{_session_id} = $old_session_id;
-	}
-	else {
+	if($ret) {
 		# save the session ID given in the response
 		$self->{_session_id} = $ret->sessionID;
+	}
+	else {
+		# restore old session ID
+		$self->{_session_id} = $old_session_id;
 	}
 	
 	return $ret;
@@ -953,7 +978,7 @@ applications.  This method is experimental: use it at your own risk.
 sub song_getWidgetEmbedCodeFbml {
 	my $ret = shift->song_getWidgetEmbedCode(@_);
 
-	unless($ret->is_fault) {
+	if($ret) {
 		my $code = $ret->{result}->{embed};
 		$code =~ /<embed (.*?)>\s*<\/embed>/;		
 		$code = "<fb:swf swf$1 />";
@@ -973,6 +998,34 @@ of favorites.
 sub song_unfavorite {
 	my($self, %args) = @_;
 	my $ret = $self->_call('song.unfavorite', %args);
+	return $ret;
+}
+
+=back
+
+=head2 TINYSONG
+
+=over 4
+
+=item $gs->tinysong_create( songID => $SONG_ID | ( query => $QUERY [, useFirstResult => $USE_FIRST_RESULT ] ) )
+
+=cut
+
+sub tinysong_create {
+	my($self, %args) = @_;
+	my $ret = $self->_call('tinysong.create', %args);
+	return $ret;
+}
+
+=item $gs->tinysong_getExpandedUrl( tinySongUrl => $TINYSONG_URL )
+
+Expands a TinySong URL into the full URL to which it redirects.
+
+=cut
+
+sub tinysong_getExpandedUrl {
+	my($self, %args) = @_;
+	my $ret = $self->_call('tinysong.getExpandedUrl', %args);
 	return $ret;
 }
 

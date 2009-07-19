@@ -11,7 +11,7 @@ WWW::Grooveshark::Response - Grooveshark API response message
 =head1 VERSION
 
 This document describes C<WWW::Grooveshark::Response> version 0.01_01
-(July 10, 2009).
+(July 19, 2009).
 
 This module is distributed with L<WWW::Grooveshark> and therefore takes its
 version from that module.  The latest version of both components is hosted on

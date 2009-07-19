@@ -1,4 +1,4 @@
-use Test::More tests => 68;
+use Test::More tests => 71;
 
 my $config_file;
 BEGIN {
@@ -32,13 +32,22 @@ my $gs = new_ok('WWW::Grooveshark' => [staging => $staging]);
 SKIP: {
     my $conn_ok;
     eval 'use Net::Config qw(%NetConfig); $conn_ok = $NetConfig{test_hosts}';
-    skip 'Net::Config needed for network-related tests', 64 if $@;
-    skip 'No network connection', 64 unless $conn_ok;
+    skip 'Net::Config needed for network-related tests', 67 if $@;
+    skip 'No network connection', 67 unless $conn_ok;
 
 	my $r;
 
+	# test service_getMethods()
+	ok($gs->service_getMethods->methods,
+		'service_getMethods() returns expected structure');	
+
+	# test service_getVersion()
+	ok($r = $gs->service_getVersion, 'service_getVersion() succeeds');	
+	cmp_ok($r->version, '>=', 1,
+		'service_getVersion() returns expected value');
+
 	# test sessionless service_ping()
-	ok($gs->service_ping, 'sessionless service_ping() returns true value');
+	ok($gs->service_ping, 'sessionless service_ping() succeeds');
 
 	diag_skip('API key not defined, skipping remaining tests', 63)
 		unless defined $api_key;
@@ -235,12 +244,8 @@ SKIP: {
 			# test user_getFavoriteSongs()
 			ok($r = $gs->user_getFavoriteSongs(userID => $user_id,
 				limit => 1), 'user_getFavoriteSongs() succeeds');
-			TODO: {
-				local $TODO = 'Thre may be a bug in ' .
-					'getting a user\'s favorite songs.';
-				ok($r->songs->[0]->{isFavorite},
-					'user_getFavoriteSongs() returns expected value');
-			}
+			ok($r->songs->[0]->{isFavorite},
+				'user_getFavoriteSongs() returns expected value');
 		
 			# test song_unfavorite()
 			ok($gs->song_unfavorite(songID => $song_id),
@@ -258,12 +263,8 @@ SKIP: {
 			# test user_getFavoriteSongs()
 			ok($r = $gs->user_getFavoriteSongs(userID => $user_id,
 				limit => 1), 'user_getFavoriteSongs() returns true value');
-			TODO: {
-				local $TODO = 'Thre may be a bug in ' .
-					'getting a user\'s favorite songs.';
-				ok($r->songs->[0]->{isFavorite},
-					'user_getFavoriteSongs() returns expected value');
-			}
+			ok($r->songs->[0]->{isFavorite},
+				'user_getFavoriteSongs() returns expected value');
 
 			# test song_unfavorite()
 			ok($gs->song_unfavorite(songID => $song_id),
