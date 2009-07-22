@@ -10,7 +10,7 @@ WWW::Grooveshark - Perl wrapper for the Grooveshark API
 
 =head1 VERSION
 
-This document describes C<WWW::Grooveshark> version 0.01_01 (July 19, 2009).
+This document describes C<WWW::Grooveshark> version 0.02_01 (July 22, 2009).
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
@@ -18,7 +18,7 @@ contributed to CPAN: http://search.cpan.org/dist/WWW-Grooveshark/.
 
 =cut
 
-our $VERSION = '0.01_01';
+our $VERSION = '0.02_01';
 $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
@@ -1009,6 +1009,11 @@ sub song_unfavorite {
 
 =item $gs->tinysong_create( songID => $SONG_ID | ( query => $QUERY [, useFirstResult => $USE_FIRST_RESULT ] ) )
 
+Creates a tiny URL that links to the song with the specified $SONG_ID.  The
+method seems to also allow searching (if a $QUERY and whether to
+$USE_FIRST_RESULT are specified), but this form appears to be buggy at the
+time of this writing, and is discouraged.
+
 =cut
 
 sub tinysong_create {
@@ -1034,6 +1039,19 @@ sub tinysong_getExpandedUrl {
 =head2 USER
 
 =over 4
+
+=item $gs->user_about( $user_id => $USER_ID )
+
+Returns information about the user with the specified $USER_ID, such as
+username, date joined, etc.
+
+=cut
+
+sub user_about {
+	my($self, %args) = @_;
+	my $ret = $self->_call('user.about', %args);
+	return $ret;
+}
 
 =item $gs->user_getFavoriteSongs( $user_id => $USER_ID [, limit => $LIMIT ] [, page => $PAGE ] )
 

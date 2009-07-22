@@ -1,6 +1,15 @@
 Revision history for WWW::Grooveshark
 =====================================
 
+July 22, 2009
+-------------
+ * added tests and documentation for the tinysong API methods
+ * releasing version 0.02
+
+July 21, 2009
+-------------
+ * added one more user API method and tests
+
 July 19, 2009
 -------------
  * added example script to query the service for a list of its API methods and

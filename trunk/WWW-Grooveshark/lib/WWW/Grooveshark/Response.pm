@@ -10,8 +10,8 @@ WWW::Grooveshark::Response - Grooveshark API response message
 
 =head1 VERSION
 
-This document describes C<WWW::Grooveshark::Response> version 0.01_01
-(July 19, 2009).
+This document describes C<WWW::Grooveshark::Response> version 0.02_01 (July 22,
+2009).
 
 This module is distributed with L<WWW::Grooveshark> and therefore takes its
 version from that module.  The latest version of both components is hosted on
@@ -21,7 +21,7 @@ http://search.cpan.org/dist/WWW-Grooveshark/.
 
 =cut
 
-our $VERSION = '0.01_01';
+our $VERSION = '0.02_01';
 $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS

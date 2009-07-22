@@ -7,40 +7,38 @@ use LWP::Simple;
 use Net::Twitter;
 use Term::ReadKey;
 
-my($username, $password, $count, @users);
+my($twitter_user, $twitter_pass, $tweet_count, @tweeps);
 
-print STDERR "Username: ";
-chomp($username = <STDIN>);
+print STDERR "Twitter username: ";
+chomp($twitter_user = <STDIN>);
 
-print STDERR "Password: ";
+print STDERR "Twitter password: ";
 ReadMode('noecho');
-chomp($password = ReadLine(0));
+chomp($twitter_pass = ReadLine(0));
 ReadMode('restore');
 print STDERR "\n";
 
-print STDERR "Count: ";
-chomp($count = <STDIN>);
+print STDERR "Tweet count: ";
+chomp($tweet_count = <STDIN>);
 
-print STDERR "Users to analyze (space-separated): ";
+print STDERR "Tweeps to analyze (space-separated): ";
 $_ = <STDIN>;
 chomp;
-@users = split /\s+/;
+@tweeps = split /\s+/;
 
 my $t = Net::Twitter->new(
 	traits   => [qw/API::REST/],
-	username => $username,
-	password => $password,
+	username => $twitter_user,
+	password => $twitter_pass,
 );
 
-print "<html><head><title>Links</title></head><body>\n";
-for(@users) {
-	for(@{$t->user_timeline({id => $_, since_id => 1, count => $count})}) {
-		$_ = $_->{text};
-		for(/\bhttp:\/\/[a-z0-9\.\/\%]+/ig) {
-			my $content = get($_);
-			$content =~ /<title>(.*?)<\/title>/i;
-			print "<p><a href=\"$_\">$1</a></p>\n";
+for(sort {$a->{id} <=> $b->{id}} map {@{$t->user_timeline({id => $_, since_id => 1, count => $tweet_count})}} @tweeps) {
+	my $url = $_->{text};
+	for($url =~ /\bhttp:\/\/[a-z0-9\.\/\%]+/ig) {
+		my $content = get($_);
+		if($content =~ /<title>(.*?)<\/title>/i) {
+			my $title = $1;
+			print "$_ $title\n";
 		}
 	}
 }
-print "</body></html>\n";

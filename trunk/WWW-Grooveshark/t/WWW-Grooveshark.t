@@ -1,4 +1,4 @@
-use Test::More tests => 71;
+use Test::More tests => 77;
 
 my $config_file;
 BEGIN {
@@ -32,8 +32,8 @@ my $gs = new_ok('WWW::Grooveshark' => [staging => $staging]);
 SKIP: {
     my $conn_ok;
     eval 'use Net::Config qw(%NetConfig); $conn_ok = $NetConfig{test_hosts}';
-    skip 'Net::Config needed for network-related tests', 67 if $@;
-    skip 'No network connection', 67 unless $conn_ok;
+    skip 'Net::Config needed for network-related tests', 73 if $@;
+    skip 'No network connection', 73 unless $conn_ok;
 
 	my $r;
 
@@ -49,14 +49,14 @@ SKIP: {
 	# test sessionless service_ping()
 	ok($gs->service_ping, 'sessionless service_ping() succeeds');
 
-	diag_skip('API key not defined, skipping remaining tests', 63)
+	diag_skip('API key not defined, skipping remaining tests', 69)
 		unless defined $api_key;
 
 	# test session_start()
 	ok($r = $gs->session_start(apiKey => $api_key),
 		'session_start() succeeds');
 
-	diag_skip('Problem starting session: ' . $r->fault_line, 62)
+	diag_skip('Problem starting session: ' . $r->fault_line, 68)
 		unless $r;
 
 	# test service_ping()
@@ -75,6 +75,7 @@ SKIP: {
 	my %search = (query => 'The Beatles', limit => 1);
 	my($album_id, $artist_id, $playlist_id, $song_id);
 	my($ap_song_id, @song_ids);
+	my($lite_url, $tinysong_url);
 
 	# test search_albums()
 	ok($gs->search_albums(%search)->albums,
@@ -163,6 +164,7 @@ SKIP: {
 	ok($r = $gs->song_about(songID => $song_id), 'song_about() succeeds');
 	cmp_ok($r->song->{songID}, '==', $song_id,
 		'song_about() returns expected value');
+	$lite_url = $r->song->{liteUrl};
 
 	# test song_getSimilar()
 	ok($gs->song_getSimilar(songID => $song_id, limit => 1)->songs,
@@ -210,9 +212,21 @@ SKIP: {
 	# test autoplay_stop()
 	ok($gs->autoplay_stop, 'autoplay_stop() succeeds');
 
+	# test tinysong_create()
+	ok($r = $gs->tinysong_create(songID => $song_id),
+		'tinysong_create() succeeds');
+	ok($tinysong_url = $r->tinySongUrl,
+		'tinysong_create() returns expected structure');
+	
+	# test tinysong_getExpandedUrl()
+	ok($r = $gs->tinysong_getExpandedUrl(tinySongUrl => $tinysong_url),
+		'tinysong_getExpandedUrl() succeeds');
+	cmp_ok($r->tinySongUrl, 'eq', $lite_url,
+		'tinysong_getExpandedUrl() returns expected value');
+
 	SKIP: {
 		diag_skip('Username or password not defined, ' .
-			'skipping tests requiring login', 20)
+			'skipping tests requiring login', 22)
 			unless defined($user) && defined($pass);
 		
 		my($auth_token, $user_id);
@@ -231,10 +245,14 @@ SKIP: {
 			'session_loginViaAuthToken() returns expected value');
 
 		# test session_getUserID()
-		ok($r = $gs->session_getUserID,
-			'session_getUserID() succeeds');
+		ok($r = $gs->session_getUserID, 'session_getUserID() succeeds');
 		cmp_ok($user_id, '==', $r->result,
 			'session_getUserID() returns expected value');
+
+		# test user_about()
+		ok($r = $gs->user_about(userID => $user_id), 'user_about() succeeds');
+		cmp_ok($user_id, '==', $r->user->{userID},
+			'user_about() returns expected value');
 
 		# test user_getPlaylists()
 		ok($gs->user_getPlaylists(userID => $user_id, limit => 1)->playlists,
