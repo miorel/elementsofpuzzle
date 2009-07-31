@@ -14,12 +14,13 @@ WriteMakefile(
 	MIN_PERL_VERSION => '5.006',
 	PREREQ_PM        =>
 		{
-			Carp           => 0,
-			Digest::MD5    => 0,
-			Exporter       => 0,
-			JSON::Any      => 0,
-			LWP::UserAgent => 0,
-			NEXT           => 0.61,
-			URI::Escape    => 0,
+			Carp             => 0,
+			Digest::MD5      => 0,
+			Exporter         => 0,
+			JSON::Any        => 0,
+			LWP::UserAgent   => 0,
+			NEXT             => 0.61,
+			URI::Escape      => 0,
+			XML::RSS::Parser => 0,
 		},
 );

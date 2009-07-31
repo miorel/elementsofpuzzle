@@ -1,4 +1,4 @@
-use Test::More tests => 77;
+use Test::More tests => 79;
 
 my $config_file;
 BEGIN {
@@ -6,7 +6,7 @@ BEGIN {
 	diag(<<"NOTE");
 
 
-NOTE: This test takes additional configuration to run all tests.
+NOTE: This script takes additional configuration to run all tests.
 See $config_file.example for details.
 
 
@@ -32,8 +32,8 @@ my $gs = new_ok('WWW::Grooveshark' => [staging => $staging]);
 SKIP: {
     my $conn_ok;
     eval 'use Net::Config qw(%NetConfig); $conn_ok = $NetConfig{test_hosts}';
-    skip 'Net::Config needed for network-related tests', 73 if $@;
-    skip 'No network connection', 73 unless $conn_ok;
+    skip 'Net::Config needed for network-related tests', 75 if $@;
+    skip 'No network connection', 75 unless $conn_ok;
 
 	my $r;
 
@@ -49,15 +49,14 @@ SKIP: {
 	# test sessionless service_ping()
 	ok($gs->service_ping, 'sessionless service_ping() succeeds');
 
-	diag_skip('API key not defined, skipping remaining tests', 69)
+	diag_skip('API key not defined, skipping remaining tests', 71)
 		unless defined $api_key;
 
 	# test session_start()
 	ok($r = $gs->session_start(apiKey => $api_key),
 		'session_start() succeeds');
 
-	diag_skip('Problem starting session: ' . $r->fault_line, 68)
-		unless $r;
+	diag_skip('Problem starting session: ' . $r->fault_line, 70) unless $r;
 
 	# test service_ping()
 	ok($gs->service_ping, 'service_ping() succeeds');
@@ -72,9 +71,10 @@ SKIP: {
 	cmp_ok($r->sessionID, 'eq', $gs->sessionID,
 		'session_get() returns expected value');
 	
-	my %search = (query => 'The Beatles', limit => 1);
-	my($album_id, $artist_id, $playlist_id, $song_id);
-	my($ap_song_id, @song_ids);
+	my $limit = 5;
+	my %search = (query => 'The Beatles', limit => $limit);
+	my($album_id, $artist_id, $playlist_id, $song_id, @song_ids, $ap_song_id);
+	my(@songs, $song_count);
 	my($lite_url, $tinysong_url);
 
 	# test search_albums()
@@ -82,7 +82,7 @@ SKIP: {
 		'search_albums() returns expected structure');
 
 	# test popular_getAlbums()
-	$r = $gs->popular_getAlbums(limit => 1);
+	$r = $gs->popular_getAlbums(limit => $limit);
 	ok($r->albums, 'popular_getAlbums() returns expected structure');
 	$album_id = ($r->albums)[0]->{albumID};
 
@@ -93,9 +93,9 @@ SKIP: {
 		'album_about() returns expected value');
 
 	# test album_getSongs()
-	ok($r = $gs->album_getSongs(albumID => $album_id, limit => 1),
+	ok($r = $gs->album_getSongs(albumID => $album_id, limit => $limit),
 		'album_getSongs() succeeds');
-	cmp_ok(($r->songs)[0]->{albumID}, '==', $album_id,
+	cmp_ok((@songs = $r->songs)[0]->{albumID}, '==', $album_id,
 		'album_getSongs() returns expected value');
 
 	# test search_artists()
@@ -103,7 +103,7 @@ SKIP: {
 		'search_artists() returns expected structure');
 
 	# test popular_getArtists()
-	$r = $gs->popular_getArtists(limit => 1);
+	$r = $gs->popular_getArtists(limit => $limit);
 	ok($r->artists, 'popular_getArtists() returns expected structure');
 	$artist_id = ($r->artists)[0]->{artistID};
 
@@ -114,25 +114,25 @@ SKIP: {
 		'artist_about() returns expected value');
 
 	# test artist_getAlbums()
-	ok($r = $gs->artist_getAlbums(artistID => $artist_id, limit => 1),
+	ok($r = $gs->artist_getAlbums(artistID => $artist_id, limit => $limit),
 		'artist_getAlbums() succeeds');
 	cmp_ok(($r->albums)[0]->{artistID}, '==', $artist_id,
 		'artist_getAlbums() returns expected value');
 
 	# test artist_getSongs()
-	ok($r = $gs->artist_getSongs(artistID => $artist_id, limit => 1),
+	ok($r = $gs->artist_getSongs(artistID => $artist_id, limit => $limit),
 		'artist_getSongs() succeeds');
-	cmp_ok(($r->songs)[0]->{artistID}, '==', $artist_id,
+	cmp_ok((@songs = $r->songs)[0]->{artistID}, '==', $artist_id,
 		'artist_getSongs() returns expected value');
 
 	# test artist_getSimilar()
-	ok($gs->artist_getSimilar(artistID => $artist_id, limit => 1)->artists,
-		'artist_getSimilar() returns expected structure');
+	ok($gs->artist_getSimilar(artistID => $artist_id, limit => $limit)
+		->artists, 'artist_getSimilar() returns expected structure');
 
 	# test artist_getTopRatedSongs()
 	ok($r = $gs->artist_getTopRatedSongs(artistID => $artist_id,
-		limit => 1), 'artist_getTopRatedSongs() succeeds');
-	cmp_ok(($r->songs)[0]->{artistID}, '==', $artist_id,
+		limit => $limit), 'artist_getTopRatedSongs() succeeds');
+	cmp_ok((@songs = $r->songs)[0]->{artistID}, '==', $artist_id,
 		'artist_getTopRatedSongs() returns expected value');
 
 	# test search_playlists()
@@ -147,7 +147,7 @@ SKIP: {
 		'playlist_about() returns expected value');
 
 	# test playlist_getSongs()
-	ok($gs->playlist_getSongs(playlistID => $playlist_id, limit => 1)
+	ok($gs->playlist_getSongs(playlistID => $playlist_id, limit => $limit)
 		->songs, 'playlist_getSongs() returns expected structure');	
 
 	# test search_songs()
@@ -155,10 +155,12 @@ SKIP: {
 		'search_songs() returns expected structure');
 
 	# test popular_getSongs()
-	$r = $gs->popular_getSongs(limit => 10);
+	$r = $gs->popular_getSongs(limit => $limit);
 	ok($r->songs, 'popular_getSongs() returns expected structure');
 	@song_ids = map {$_->{songID}} $r->songs;
-	$song_id = ($r->songs)[0]->{songID};
+	my $size = scalar @song_ids or @song_ids = map {$_->{songID}} @songs;
+	$song_id = $song_ids[0];
+	ok($size, 'popular_getSongs() returns at least one result');
 
 	# test song_about()
 	ok($r = $gs->song_about(songID => $song_id), 'song_about() succeeds');
@@ -167,7 +169,7 @@ SKIP: {
 	$lite_url = $r->song->{liteUrl};
 
 	# test song_getSimilar()
-	ok($gs->song_getSimilar(songID => $song_id, limit => 1)->songs,
+	ok($gs->song_getSimilar(songID => $song_id, limit => $limit)->songs,
 		'song_getSimilar() returns expected structure');
 
 	# test song_getStreamKey()
@@ -255,13 +257,13 @@ SKIP: {
 			'user_about() returns expected value');
 
 		# test user_getPlaylists()
-		ok($gs->user_getPlaylists(userID => $user_id, limit => 1)->playlists,
-			'user_getPlaylists() returns expected structure');
+		ok($gs->user_getPlaylists(userID => $user_id, limit => $limit)
+			->playlists, 'user_getPlaylists() returns expected structure');
 
 		if($gs->song_about(songID => $song_id)->song->{isFavorite}) {
 			# test user_getFavoriteSongs()
 			ok($r = $gs->user_getFavoriteSongs(userID => $user_id,
-				limit => 1), 'user_getFavoriteSongs() succeeds');
+				limit => $limit), 'user_getFavoriteSongs() succeeds');
 			ok($r->songs->[0]->{isFavorite},
 				'user_getFavoriteSongs() returns expected value');
 		
@@ -279,8 +281,8 @@ SKIP: {
 				'song_favorite() succeeds');
 
 			# test user_getFavoriteSongs()
-			ok($r = $gs->user_getFavoriteSongs(userID => $user_id,
-				limit => 1), 'user_getFavoriteSongs() returns true value');
+			ok($r = $gs->user_getFavoriteSongs(userID => $user_id, limit =>
+				$limit), 'user_getFavoriteSongs() returns true value');
 			ok($r->songs->[0]->{isFavorite},
 				'user_getFavoriteSongs() returns expected value');
 
@@ -294,18 +296,19 @@ SKIP: {
 			'playlist_create() returns expected structure');
 		
 		# test playlist_addSong()
-		cmp_ok(scalar(@song_ids), '==', scalar(grep {$_}
-			map {$gs->playlist_addSong(playlistID => $playlist_id,
-			songID => $_)} @song_ids),
-			'playlist_addSong() succeeds');
+		cmp_ok(scalar(grep {$_} map {$gs->playlist_addSong(
+			playlistID => $playlist_id, songID => $_)} @song_ids), '==',
+			scalar @song_ids, 'all calls to playlist_addSong() succeed');
+		cmp_ok($song_count = $gs->playlist_getSongs(playlistID => $playlist_id)
+			->pager->{totalCount}, '==', scalar @song_ids,
+			'playlist size equals number of calls to playlist_addSong()');
 
 		# test playlist_removeSong()
-		ok($gs->playlist_removeSong(playlistID => $playlist_id,
-			position => scalar(@song_ids)),
-			'playlist_removeSong() succeeds');
+		ok($r = $gs->playlist_removeSong(playlistID => $playlist_id,
+			position => $song_count), 'playlist_removeSong() succeeds');
 
 		# test playlist_moveSong()
-		ok($gs->playlist_moveSong(playlistID => $playlist_id,
+		ok($r = $gs->playlist_moveSong(playlistID => $playlist_id,
 			position => 1, newPosition => 2),
 			'playlist_moveSong() succeeds');
 

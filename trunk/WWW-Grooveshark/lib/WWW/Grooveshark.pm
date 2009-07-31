@@ -61,6 +61,7 @@ use Carp;
 use Digest::MD5 qw(md5_hex);
 use JSON::Any;
 use URI::Escape;
+use XML::RSS::Parser;
 
 use WWW::Grooveshark::Response qw(:fault);
 
@@ -91,6 +92,11 @@ HTTP.
 The hostname to use for the Grooveshark API service.  Defaults to
 "api.grooveshark.com" unless C<staging> is true, in which case it defaults to
 "staging.api.grooveshark.com".
+
+=item I<staging>
+
+Governs the default hostname for the C<service>.  Has no effect if a C<service>
+is explicity specified.
 
 =item I<path>
 
@@ -195,12 +201,20 @@ know how I can make this module smarter.
 Returns the Grooveshark API session ID, or C<undef> if there is no active
 session.
 
-=back
-
 =cut
 
 sub sessionID {
 	return shift->{_session_id};
+}
+
+=item $gs->userID( )
+
+=back
+
+=cut
+
+sub userID {
+	return shift->{_user_id};
 }
 
 =head1 API METHODS
@@ -709,7 +723,9 @@ sub service_ping {
 
 =over 4
 
-=item $gs->session_createUserAuthToken( username => $USERNAME , pass => $PASS | hashpass => $HASHPASS )
+=item $gs->session_createUserAuthToken( username => $USERNAME , pass => $PASS )
+
+=item $gs->session_createUserAuthToken( username => $USERNAME , hashpass => $HASHPASS )
 
 Creates an authentication token for the specified $USERNAME.  Authentication
 requires a $HASHPASS, which is a hexadecimal MD5 hash of the concatenation of
@@ -1007,7 +1023,9 @@ sub song_unfavorite {
 
 =over 4
 
-=item $gs->tinysong_create( songID => $SONG_ID | ( query => $QUERY [, useFirstResult => $USE_FIRST_RESULT ] ) )
+=item $gs->tinysong_create( songID => $SONG_ID )
+
+=item $gs->tinysong_create( query => $QUERY [, useFirstResult => $USE_FIRST_RESULT ] )
 
 Creates a tiny URL that links to the song with the specified $SONG_ID.  The
 method seems to also allow searching (if a $QUERY and whether to
@@ -1040,7 +1058,7 @@ sub tinysong_getExpandedUrl {
 
 =over 4
 
-=item $gs->user_about( $user_id => $USER_ID )
+=item $gs->user_about( user_id => $USER_ID )
 
 Returns information about the user with the specified $USER_ID, such as
 username, date joined, etc.
@@ -1053,7 +1071,7 @@ sub user_about {
 	return $ret;
 }
 
-=item $gs->user_getFavoriteSongs( $user_id => $USER_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+=item $gs->user_getFavoriteSongs( user_id => $USER_ID [, limit => $LIMIT ] [, page => $PAGE ] )
 
 Returns songs (and meta-information) from the favorite list of the user with
 the specified $USER_ID.
@@ -1066,7 +1084,7 @@ sub user_getFavoriteSongs {
 	return $ret;
 }
 
-=item $gs->user_getPlaylists( $user_id => $USER_ID [, limit => $LIMIT ] [, page => $PAGE ] )
+=item $gs->user_getPlaylists( user_id => $USER_ID [, limit => $LIMIT ] [, page => $PAGE ] )
 
 Gets the playlists created by the user with the specified $USER_ID.
 
@@ -1087,15 +1105,11 @@ sub user_getPlaylists {
 sub _call {
 	my($self, $method, %param) = @_;
 
-#	print STDERR "Called $method\n";
-
 	my $req = {
 		header     => {sessionID => $self->sessionID},
 		method     => $method,
 		parameters => \%param,
 	};
-
-#	use Data::Dumper; print STDERR Dumper($req);
 
 	my $json = $self->{_json}->encode($req);
 	my $url = sprintf('%s://%s/%s/%s/', ($self->{_https} ? 'https' : 'http'),
@@ -1123,8 +1137,6 @@ sub _call {
 	    	},
     	};
 	}
-
-#	use Data::Dumper; print STDERR Dumper($ret);
 
 	return WWW::Grooveshark::Response->new($ret);
 }

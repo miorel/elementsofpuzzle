@@ -1,6 +1,12 @@
 Revision history for WWW::Grooveshark
 =====================================
 
+July 31, 2009
+-------------
+ * improved tests
+ * minor documentation corrections
+ * will probably use XML::RSS::Parser for the feed API
+
 July 22, 2009
 -------------
  * added tests and documentation for the tinysong API methods

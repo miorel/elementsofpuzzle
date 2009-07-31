@@ -56,7 +56,7 @@ $VERSION = eval $VERSION;
 
 tinysong.com is a web app that can be queried for a song and returns a tiny
 URL, allowing you to listen to the song for free online and share it with
-friends.  L<WWW::TinySong> is a Perl interface to this service, allowing you
+friends.  C<WWW::TinySong> is a Perl interface to this service, allowing you
 to programmatically search its underlying database.
 
 =cut
