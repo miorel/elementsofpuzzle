@@ -1,6 +1,10 @@
 Revision history for WWW::Grooveshark
 =====================================
 
+August 10, 2009
+---------------
+ * for convenience, tinysong_getExpandedUrl now also gives you a song ID
+
 July 31, 2009
 -------------
  * improved tests

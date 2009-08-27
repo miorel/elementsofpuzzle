@@ -1,4 +1,4 @@
-package Some::Module;
+package Twitter::Bot::PDB;
 
 use 5.006;
 use strict;
@@ -6,15 +6,14 @@ use warnings;
 
 =head1 NAME
 
-Some::Module - Do something interesting
+Twitter::Bot::PDB - Do something interesting
 
 =head1 VERSION
 
-This document describes "Some::Module" version 0.01 (July 6, 2009).
+This document describes "Twitter::Bot::PDB" version 0.01 (August 2, 2009).
 
 The latest version is hosted on Google Code as part of
-L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
-contributed to CPAN: L<http://search.cpan.org/dist/Some-Module/>.
+L<http://elementsofpuzzle.googlecode.com/>.
 
 =cut
 
@@ -23,7 +22,7 @@ $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
-  use Some::Module;
+  use Twitter::Bot::PDB;
   
   # something interesting happens
 
@@ -76,11 +75,8 @@ L<http://www.google.com/>, L<Some::Other::Module>
 
 =head1 BUGS
 
-Please report them!  The preferred way to submit a bug report for this module
-is through CPAN's bug tracker:
-L<http://rt.cpan.org/Public/Dist/Display.html?Name=Some-Module>.  You may
-also create an issue at L<http://elementsofpuzzle.googlecode.com/> or drop
-me an e-mail.
+Create an issue at L<http://elementsofpuzzle.googlecode.com/> or drop me an
+e-mail.
 
 =head1 AUTHOR
 

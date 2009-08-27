@@ -5,7 +5,7 @@ Makefile.PL                              Generate Makefile
 README                                   Useful information
 bin/some_script                          Program that does something
 examples/example.pl                      Example of something interesting
-lib/Some/Module.pm                       Source for Some::Module
-t/Some-Module.t                          Test Some::Module
+lib/Twitter/Bot.pm                       Source for Twitter::Bot
+t/Twitter-Bot.t                          Test Twitter::Bot
 t/pod-coverage.t                         Test POD coverage
 t/pod.t                                  Test POD

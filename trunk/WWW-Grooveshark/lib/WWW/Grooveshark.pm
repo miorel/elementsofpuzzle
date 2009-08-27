@@ -10,7 +10,7 @@ WWW::Grooveshark - Perl wrapper for the Grooveshark API
 
 =head1 VERSION
 
-This document describes C<WWW::Grooveshark> version 0.02_01 (July 22, 2009).
+This document describes C<WWW::Grooveshark> version 0.02_01 (August 1, 2009).
 
 The latest version is hosted on Google Code as part of
 L<http://elementsofpuzzle.googlecode.com/>.  Significant changes are also
@@ -1042,13 +1042,19 @@ sub tinysong_create {
 
 =item $gs->tinysong_getExpandedUrl( tinySongUrl => $TINYSONG_URL )
 
-Expands a TinySong URL into the full URL to which it redirects.
+Expands a TinySong URL into the full URL to which it redirects.  (For
+convenience, this module additionally adds the song ID to the result if it can
+parse it from the expanded URL.)
 
 =cut
 
 sub tinysong_getExpandedUrl {
 	my($self, %args) = @_;
 	my $ret = $self->_call('tinysong.getExpandedUrl', %args);
+	eval {
+		$ret->{result}->{songID} = $1
+			if $ret->{result}->{tinySongUrl} =~ /(\d+)$/;
+	} if $ret;
 	return $ret;
 }
 

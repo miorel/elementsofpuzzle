@@ -3,9 +3,8 @@ MANIFEST                                 This file
 META.yml                                 Module meta-data
 Makefile.PL                              Generate Makefile
 README                                   Useful information
-bin/some_script                          Program that does something
 examples/example.pl                      Example of something interesting
-lib/Some/Module.pm                       Source for Some::Module
-t/Some-Module.t                          Test Some::Module
+lib/Twitter/Bot/PDB.pm                   Source for Twitter::Bot::PDB
+t/Twitter-Bot-PDB.t                      Test Twitter::Bot::PDB
 t/pod-coverage.t                         Test POD coverage
 t/pod.t                                  Test POD

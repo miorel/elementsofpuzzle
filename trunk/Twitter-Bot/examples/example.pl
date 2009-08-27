@@ -1,3 +1,3 @@
 #!/usr/bin/perl
 
-use Some::Module;
+use Twitter::Bot;
