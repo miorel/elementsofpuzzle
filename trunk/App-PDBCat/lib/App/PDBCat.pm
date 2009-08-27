@@ -35,9 +35,15 @@ Some module is a wonderful piece of software.
 
 use Carp;
 use Exporter;
+use Fcntl;
+use File::Path;
+use File::Spec;
+use IO::File;
+use IO::Uncompress::Gunzip;
+use Net::FTP;
 
+our @ISA       = ();
 our @EXPORT_OK = ();
-our @ISA       = qw(Exporter);
 
 =head1 FUNCTIONS
 
@@ -45,25 +51,72 @@ Generic text about all the nifty things this module can do.
 
 =over 4
 
-=item Some::Module->do_something_awesome( @ARG )
+=item $pdb_cat->run( $CMD, @ARGS )
+
+Runs $CMD (by calling C<system>) with the specified @ARGS, first replacing any
+argument that is (likely to be) a Protein Data Bank ID with a path where the
+file corresponding to this ID is stored.
 
 =cut
 
-sub do_something_awesome {
-    my($pkg, @arg) = @_;
-	# do something awesome
-	return 0;
+sub run {
+	my($self, $cmd, @args) = @_;
+	for(@args) {
+		if(/\A[a-z0-9]{4}\z/i) {
+			
+		}
+	}
+	return system($cmd, @args);
 }
+
 =back
 
 =cut
 
 ################################################################################
 
-sub _do_something_awesome_internally {
-    my($pkg, @arg) = @_;
-	# do something awesome
-	return 0;
+sub _get_file {
+    my($class, @dir) = @_;
+    my $file         = pop @dir;
+    my($dir, $local_path, $store, $fh);
+    if($class->cache) {
+        $dir        = File::Spec->catfile($class->cache, @dir);
+        $local_path = File::Spec->catfile($dir, $file);
+    }
+    unless($class->cache && ($store = new IO::File($local_path))) {
+        my $ftp;
+        if(   ($ftp = new Net::FTP($class->ftp, Debug => 0)) # connect
+            && $ftp->login(qw(anonymous -anonymous@))        # login
+            && $ftp->cwd(join('', map("/$_", @dir)))         # chdir
+        ) {
+            # store in temporary file unless there's a cache
+            $store = IO::File->new_tmpfile unless $class->cache # cache exists
+                && File::Path::mkpath($dir)                     # mkdir
+                && ($store = new IO::File($local_path, '+>'));  # create file
+            
+            # seek to start if successful get otherwise delete file
+            if($ftp->get($file => $store)) {
+                seek($store, 0, SEEK_SET);
+            }
+            else {
+                undef $store;
+                $class->cache and unlink $local_path;
+            }
+            
+            # clean up
+            $ftp->quit;
+        }
+    }
+    
+    # if file stored, decompress it
+    if($store) {
+        $fh = IO::File->new_tmpfile;
+        IO::Uncompress::Gunzip::gunzip($store => $fh);
+        seek($fh, 0, SEEK_SET);
+        close $store;
+    }
+    
+    return $fh;
 }
 
 1;

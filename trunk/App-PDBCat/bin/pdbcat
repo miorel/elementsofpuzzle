@@ -1,4 +1,8 @@
 #!/usr/bin/perl
 
+use warnings;
+use strict;
+
 use App::PDBCat;
 
+use File::HomeDir;
