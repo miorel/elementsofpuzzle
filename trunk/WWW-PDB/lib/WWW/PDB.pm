@@ -2,7 +2,7 @@ package WWW::PDB;
 
 =head1 NAME
 
-WWW::PDB - Perl interface to the Protein Data Bank
+WWW::PDB - Perl interface to the PDB web services
 
 =head1 SYNOPSIS
 

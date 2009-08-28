@@ -1,0 +1,83 @@
+#!/usr/bin/perl
+
+use 5.006;
+use strict;
+use warnings;
+
+=head1 NAME
+
+pdbcat - Concatenate PDB file(s) to standard output
+
+=head1 VERSION
+
+This document describes "pdbcat" version 0.00_01 (August 28, 2009).
+
+The latest version is hosted on Google Code as part of
+L<http://elementsofpuzzle.googlecode.com/>.
+
+=cut
+
+our $VERSION = '0.00_01';
+$VERSION = eval $VERSION;
+
+=head1 SYNOPSIS
+
+On the command-line:
+
+  pdbcat 2ili.pdb
+
+will output something like:
+  
+  HEADER    LYASE                                   02-OCT-06   2ILI              
+  TITLE     REFINE ATOMIC STRUCTURE OF HUMAN CARBONIC ANHYDRASE II                
+  COMPND    MOL_ID: 1;                                                            
+  COMPND   2 MOLECULE: CARBONIC ANHYDRASE 2;                                      
+  COMPND   3 CHAIN: A;                                                            
+  COMPND   4 SYNONYM: CARBONIC ANHYDRASE II, CARBONATE DEHYDRATASE II,            
+  COMPND   5 CA-II, CARBONIC ANHYDRASE C;                                         
+  COMPND   6 EC: 4.2.1.1;                                                         
+  COMPND   7 ENGINEERED: YES                                                      
+  ...
+
+=cut
+
+use File::Spec;
+
+use App::PDBRun;
+
+my $cmd = (File::Spec->splitpath($0))[2];
+unless($cmd =~ s/^pdb//) {
+	print STDERR "Missing expected command prefix: pdb";
+	exit(1);
+}
+
+App::PDBRun->config;
+App::PDBRun->run($cmd, @ARGV);
+
+1;
+
+__END__
+
+=head1 SEE ALSO
+
+L<App::PDBRun>, L<WWW::PDB>
+
+=head1 BUGS
+
+Please report them!  Create an issue at
+L<http://elementsofpuzzle.googlecode.com/> or drop me an e-mail.
+
+=head1 AUTHOR
+
+Miorel-Lucian Palii E<lt>mlpalii@gmail.comE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2009 by Miorel-Lucian Palii
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.8 or,
+at your option, any later version of Perl 5 you may have available.  See
+L<perlartistic>.
+
+=cut

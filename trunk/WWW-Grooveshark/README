@@ -39,7 +39,7 @@ find out how to specify these.
 
 DEPENDENCIES
 
-This module requires the following other modules:
+This distribution requires the following other packages:
 
   Carp
   Digest::MD5

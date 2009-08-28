@@ -20,7 +20,7 @@ To install this module type the following:
 
 DEPENDENCIES
 
-This module requires the following other modules:
+This distribution requires the following other packages:
 
   Carp
   Class::Accessor
